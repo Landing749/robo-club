@@ -1,0 +1,3177 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RoboSys – Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════
+   THEME TOKENS
+══════════════════════════════════════════ */
+[data-theme="dark"] {
+  --bg: #04050d;
+  --surface: #080a18;
+  --surface2: #0c0e1f;
+  --surface3: #101326;
+  --border: #161930;
+  --border2: #1e2340;
+  --text: #dde2f5;
+  --text-dim: #464c6a;
+  --text-mid: #7a84a8;
+}
+[data-theme="light"] {
+  --bg: #eef0f8;
+  --surface: #ffffff;
+  --surface2: #f4f5fc;
+  --surface3: #e8eaf5;
+  --border: #d4d8ed;
+  --border2: #c0c5e2;
+  --text: #111428;
+  --text-dim: #8890b4;
+  --text-mid: #5a6080;
+}
+:root {
+  --cyan: #00f5d4;
+  --cyan2: #00d4b8;
+  --cyan-glow: rgba(0,245,212,0.1);
+  --cyan-glow2: rgba(0,245,212,0.05);
+  --amber: #ffb800;
+  --amber-glow: rgba(255,184,0,0.09);
+  --red: #ff3366;
+  --red-glow: rgba(255,51,102,0.1);
+  --green: #39d98a;
+  --purple: #9b5de5;
+  --font-d: 'Orbitron', monospace;
+  --font-b: 'Share Tech Mono', monospace;
+  --font-s: 'Space Grotesk', sans-serif;
+  --sidebar-w: 228px;
+  --topbar-h: 62px;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-b); overflow: hidden;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* SCANLINES */
+[data-theme="dark"] body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.022) 3px,rgba(0,0,0,0.022) 4px);
+  pointer-events: none; z-index: 9998;
+}
+
+/* ══════════════════════════════════════════
+   PAGE LOADER
+══════════════════════════════════════════ */
+/* ── CINEMATIC PAGE LOADER ── */
+#pageLoader {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+  overflow: hidden;
+}
+#pageLoader.gone { opacity: 0; visibility: hidden; pointer-events: none; }
+
+/* animated grid behind */
+#pageLoader::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,245,212,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,245,212,0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  animation: ldr-grid-drift 12s linear infinite;
+}
+@keyframes ldr-grid-drift { to { background-position: 48px 48px; } }
+
+/* vignette */
+#pageLoader::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 65% at 50% 50%, transparent 30%, var(--bg) 80%);
+  pointer-events: none;
+}
+
+.ldr-inner {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center;
+}
+
+/* hex ring system */
+.ldr-hex-wrap {
+  position: relative; width: 140px; height: 140px; margin-bottom: 2.5rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.ldr-ring {
+  position: absolute; border-radius: 50%; border: 1px solid;
+}
+.ldr-ring-1 {
+  width: 140px; height: 140px;
+  border-color: rgba(0,245,212,0.12);
+  animation: ldr-r-spin 8s linear infinite;
+}
+.ldr-ring-2 {
+  width: 100px; height: 100px;
+  border-color: rgba(0,245,212,0.22);
+  border-style: dashed;
+  animation: ldr-r-spin 5s linear infinite reverse;
+}
+.ldr-ring-3 {
+  width: 64px; height: 64px;
+  border-color: rgba(0,245,212,0.4);
+  animation: ldr-r-spin 3s linear infinite;
+}
+@keyframes ldr-r-spin { to { transform: rotate(360deg); } }
+
+/* orbit dot */
+.ldr-orbit-dot {
+  position: absolute;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan), 0 0 20px rgba(0,245,212,0.4);
+  animation: ldr-orbit 3s linear infinite;
+}
+@keyframes ldr-orbit {
+  0%   { transform: rotate(0deg)   translateX(70px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(70px) rotate(-360deg); }
+}
+
+/* center icon */
+.ldr-center {
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, rgba(0,245,212,0.15), rgba(0,245,212,0.04));
+  border: 1px solid rgba(0,245,212,0.4);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
+  box-shadow: 0 0 32px rgba(0,245,212,0.2), inset 0 1px 0 rgba(0,245,212,0.12);
+  animation: ldr-icon-pulse 2.4s ease-in-out infinite;
+}
+@keyframes ldr-icon-pulse {
+  0%,100% { box-shadow: 0 0 32px rgba(0,245,212,0.2), inset 0 1px 0 rgba(0,245,212,0.12); }
+  50%     { box-shadow: 0 0 48px rgba(0,245,212,0.45), inset 0 1px 0 rgba(0,245,212,0.2); }
+}
+
+.ldr-logo-name {
+  font-family: var(--font-d); font-size: 1.05rem; font-weight: 900;
+  letter-spacing: 0.3em; color: var(--cyan);
+  text-shadow: 0 0 24px rgba(0,245,212,0.5);
+  margin-bottom: 0.4rem;
+}
+.ldr-tagline {
+  font-size: 0.52rem; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 2rem;
+}
+
+/* scan bar */
+.ldr-bar-wrap {
+  width: 220px; height: 2px; background: rgba(0,245,212,0.08);
+  position: relative; overflow: hidden; margin-bottom: 1.25rem;
+}
+.ldr-bar-fill {
+  position: absolute; top: 0; left: -60%; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  animation: ldr-scan 1.5s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--cyan);
+}
+@keyframes ldr-scan { to { left: 110%; } }
+
+.ldr-status {
+  font-family: var(--font-d); font-size: 0.52rem; letter-spacing: 0.3em;
+  color: var(--cyan); animation: ldr-blink 1.6s ease-in-out infinite;
+}
+@keyframes ldr-blink { 0%,100%{opacity:.25} 50%{opacity:1} }
+
+/* ══════════════════════════════════════════
+   AUTH OVERLAY
+══════════════════════════════════════════ */
+#authOverlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(0,245,212,0.04) 0%, var(--bg) 70%);
+  display: flex; align-items: center; justify-content: center;
+}
+#authOverlay.hidden { display: none; }
+
+.auth-bg-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(22,25,48,0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22,25,48,0.5) 1px, transparent 1px);
+  background-size: 50px 50px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black, transparent);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, black, transparent);
+}
+
+.auth-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 2.5rem;
+  width: 100%; max-width: 400px;
+  position: relative; z-index: 1;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,245,212,0.04);
+}
+.auth-box::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0.6;
+}
+
+.auth-logo {
+  display: flex; align-items: center; gap: 0.85rem; margin-bottom: 2rem;
+  justify-content: center;
+}
+.auth-logo-icon {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, rgba(0,245,212,0.2), rgba(0,245,212,0.05));
+  border: 1px solid rgba(0,245,212,0.3);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+  box-shadow: 0 0 24px rgba(0,245,212,0.15);
+}
+.auth-logo-name {
+  font-family: var(--font-d); font-size: 1.15rem; font-weight: 900;
+  letter-spacing: 0.2em; color: var(--cyan);
+  text-shadow: 0 0 20px rgba(0,245,212,0.4);
+}
+.auth-tagline { font-family: var(--font-s); font-size: 0.72rem; color: var(--text-dim); text-align: center; margin-bottom: 1.75rem; font-weight: 300; }
+
+.auth-tabs {
+  display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.75rem;
+}
+.auth-tab {
+  flex: 1; padding: 0.75rem; background: none; border: none;
+  color: var(--text-dim); font-family: var(--font-b); font-size: 0.65rem;
+  letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color 0.2s, border-color 0.2s;
+}
+.auth-tab.active { color: var(--cyan); border-color: var(--cyan); }
+
+.auth-form { display: flex; flex-direction: column; gap: 1.1rem; }
+.auth-form.hidden { display: none; }
+
+.form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.form-label { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-dim); }
+.form-input {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 0.75rem 1rem;
+  font-family: var(--font-b); font-size: 0.78rem;
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0,245,212,0.06); }
+
+.btn-primary {
+  background: var(--cyan); color: var(--bg);
+  border: none; padding: 0.9rem; font-family: var(--font-d);
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 0 20px rgba(0,245,212,0.25);
+}
+.btn-primary:hover { background: var(--cyan2); box-shadow: 0 0 32px rgba(0,245,212,0.4); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-google {
+  background: transparent; border: 1px solid var(--border2);
+  color: var(--text); padding: 0.85rem; font-family: var(--font-b);
+  font-size: 0.7rem; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+}
+.btn-google:hover { border-color: var(--cyan); background: var(--cyan-glow2); }
+
+.auth-divider {
+  display: flex; align-items: center; gap: 1rem;
+  font-size: 0.58rem; color: var(--text-dim); letter-spacing: 0.18em;
+}
+.auth-divider::before, .auth-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+.auth-err { font-size: 0.68rem; color: var(--red); text-align: center; min-height: 1.2em; }
+
+/* ══════════════════════════════════════════
+   PENDING OVERLAY
+══════════════════════════════════════════ */
+#pendingOverlay {
+  position: fixed; inset: 0; z-index: 8500;
+  background: rgba(4,5,13,0.92); backdrop-filter: blur(12px);
+  display: flex; align-items: center; justify-content: center;
+}
+#pendingOverlay.hidden { display: none; }
+.pending-box {
+  background: var(--surface); border: 1px solid rgba(255,184,0,0.3);
+  padding: 2.75rem; max-width: 440px; text-align: center;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 40px rgba(255,184,0,0.05);
+  position: relative;
+}
+.pending-box::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+  opacity: 0.6;
+}
+.pending-icon { font-size: 2.5rem; margin-bottom: 1.25rem; }
+.pending-title {
+  font-family: var(--font-d); font-size: 0.88rem; font-weight: 700;
+  letter-spacing: 0.15em; color: var(--amber); margin-bottom: 1rem;
+}
+.pending-msg { font-family: var(--font-s); font-size: 0.82rem; color: var(--text-dim); line-height: 1.8; margin-bottom: 1.75rem; font-weight: 300; }
+.btn-logout-pending {
+  background: transparent; border: 1px solid var(--text-dim);
+  color: var(--text-dim); padding: 0.65rem 1.75rem;
+  font-family: var(--font-b); font-size: 0.65rem; cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-logout-pending:hover { border-color: var(--red); color: var(--red); }
+
+/* ══════════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════════ */
+#app { display: none; height: 100vh; flex-direction: column; }
+#app.visible { display: flex; }
+
+/* TOPBAR */
+#topbar {
+  height: var(--topbar-h); min-height: var(--topbar-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 1.5rem;
+  justify-content: space-between; z-index: 100; position: relative;
+}
+#topbar::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,245,212,0.2), transparent);
+}
+.topbar-left { display: flex; align-items: center; gap: 1rem; }
+.topbar-logo {
+  font-family: var(--font-d); font-size: 0.9rem; font-weight: 900;
+  letter-spacing: 0.2em; color: var(--cyan);
+  text-shadow: 0 0 16px rgba(0,245,212,0.35);
+}
+.topbar-breadcrumb { font-size: 0.6rem; color: var(--text-dim); letter-spacing: 0.12em; }
+.topbar-right { display: flex; align-items: center; gap: 1rem; }
+.topbar-user {
+  font-size: 0.62rem; color: var(--text-mid); letter-spacing: 0.08em;
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.user-role-badge {
+  font-size: 0.52rem; padding: 0.18rem 0.6rem;
+  border: 1px solid var(--cyan); color: var(--cyan); letter-spacing: 0.12em;
+  text-transform: uppercase; background: rgba(0,245,212,0.05);
+}
+.icon-btn {
+  background: none; border: none; color: var(--text-dim); cursor: pointer;
+  font-size: 1rem; padding: 0.45rem; transition: color 0.2s, background 0.2s; border-radius: 6px;
+}
+.icon-btn:hover { color: var(--cyan); background: var(--surface2); }
+
+/* BODY AREA */
+.app-body { display: flex; flex: 1; overflow: hidden; }
+
+/* SIDEBAR */
+#sidebar {
+  width: var(--sidebar-w); min-width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden;
+  transition: width 0.25s ease, min-width 0.25s ease;
+}
+#sidebar::after {
+  content: ''; position: absolute; top: var(--topbar-h); left: var(--sidebar-w); bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(0,245,212,0.1), transparent 60%);
+  pointer-events: none;
+}
+#sidebar.collapsed { width: 56px; min-width: 56px; }
+.sidebar-section-label {
+  font-size: 0.52rem; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--text-dim); padding: 1.5rem 1.25rem 0.5rem;
+}
+#sidebar.collapsed .sidebar-section-label { display: none; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.8rem 1.25rem; cursor: pointer; font-size: 0.68rem;
+  letter-spacing: 0.08em; color: var(--text-mid);
+  border-left: 2px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap; overflow: hidden;
+  user-select: none; position: relative;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(0,245,212,0.08), transparent);
+  color: var(--cyan); border-left-color: var(--cyan);
+}
+.nav-icon { font-size: 0.95rem; min-width: 20px; text-align: center; flex-shrink: 0; }
+.nav-label { overflow: hidden; transition: opacity 0.2s; }
+#sidebar.collapsed .nav-label { opacity: 0; width: 0; }
+
+.sidebar-bottom { margin-top: auto; padding: 0.75rem; border-top: 1px solid var(--border); }
+.sidebar-bottom .nav-item { border-left: none; padding: 0.6rem 0.75rem; }
+
+/* MAIN PANEL */
+#main {
+  flex: 1; overflow-y: auto; background: var(--bg);
+  padding: 2.25rem 2.75rem;
+}
+
+/* ══════════════════════════════════════════
+   MODULE PANELS
+══════════════════════════════════════════ */
+.module-panel { display: none; }
+.module-panel.active { display: block; }
+
+.mod-header { margin-bottom: 2rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+.mod-title {
+  font-family: var(--font-d); font-size: 1rem; font-weight: 900;
+  letter-spacing: 0.1em; margin-bottom: 0.3rem;
+  display: flex; align-items: center; gap: 0.75rem;
+}
+.mod-title::before {
+  content: ''; width: 3px; height: 1.1em; background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan); border-radius: 2px; flex-shrink: 0;
+}
+.mod-sub { font-family: var(--font-s); font-size: 0.78rem; color: var(--text-dim); font-weight: 300; padding-left: 1.1rem; }
+
+/* ── STAT CARDS ── */
+.stat-row { display: grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+.scard {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 1.5rem; position: relative; overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.scard:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.3); border-color: var(--border2); }
+.scard::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+.scard.amber::after { background: linear-gradient(90deg, transparent, var(--amber), transparent); }
+.scard.red::after { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+.scard.green::after { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+.scard-glow {
+  position: absolute; width: 100px; height: 100px; border-radius: 50%;
+  top: -30px; right: -20px; pointer-events: none;
+  background: rgba(0,245,212,0.04);
+}
+.scard.amber .scard-glow { background: rgba(255,184,0,0.04); }
+.scard.red .scard-glow { background: rgba(255,51,102,0.04); }
+.scard.green .scard-glow { background: rgba(57,217,138,0.04); }
+.scard-val { font-family:var(--font-d); font-size:2rem; font-weight:900; color:var(--cyan); line-height:1; text-shadow: 0 0 20px rgba(0,245,212,0.3); }
+.scard.amber .scard-val { color:var(--amber); text-shadow: 0 0 20px rgba(255,184,0,0.3); }
+.scard.red .scard-val { color:var(--red); text-shadow: 0 0 20px rgba(255,51,102,0.3); }
+.scard.green .scard-val { color:var(--green); text-shadow: 0 0 20px rgba(57,217,138,0.3); }
+.scard-lbl { font-size:0.55rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--text-dim); margin-top:0.5rem; }
+
+/* ── TABLE ── */
+.rs-table-wrap { background:var(--surface); border:1px solid var(--border); overflow-x:auto; border-radius: 2px; }
+.rs-table { width:100%; border-collapse:collapse; font-size:0.72rem; }
+.rs-table th {
+  background:var(--surface2); padding:0.95rem 1.25rem;
+  font-size:0.58rem; letter-spacing:0.22em; text-transform:uppercase;
+  color:var(--text-dim); font-weight:400; text-align:left;
+  border-bottom:1px solid var(--border);
+}
+.rs-table td {
+  padding:0.95rem 1.25rem; border-bottom:1px solid var(--border);
+  vertical-align:middle; color:var(--text-mid);
+}
+.rs-table tr:last-child td { border-bottom:none; }
+.rs-table tr:hover td { background:var(--surface2); }
+.rs-table .bold { color:var(--text); font-weight:bold; }
+
+/* Status badges */
+.status {
+  display:inline-block; font-size:0.52rem; padding:0.22rem 0.7rem;
+  border:1px solid; letter-spacing:0.14em; text-transform:uppercase; white-space:nowrap;
+}
+.s-pending { border-color:rgba(255,184,0,0.5); color:var(--amber); background: rgba(255,184,0,0.05); }
+.s-verified { border-color:rgba(0,245,212,0.5); color:var(--cyan); background: rgba(0,245,212,0.05); }
+.s-flagged { border-color:rgba(255,51,102,0.5); color:var(--red); background: rgba(255,51,102,0.05); }
+.s-locked { border-color:rgba(57,217,138,0.5); color:var(--green); background: rgba(57,217,138,0.05); }
+.s-rejected { border-color:rgba(90,96,128,0.5); color:var(--text-dim); }
+
+/* ── TOOLBAR ── */
+.toolbar { display:flex; align-items:center; gap:0.9rem; margin-bottom:1.25rem; flex-wrap:wrap; }
+.rs-input {
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--text); padding:0.65rem 1rem; font-family:var(--font-b); font-size:0.7rem;
+  outline:none; transition:border-color 0.2s, box-shadow 0.2s;
+}
+.rs-input:focus { border-color:var(--cyan); box-shadow: 0 0 0 2px rgba(0,245,212,0.06); }
+.rs-select {
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--text-mid); padding:0.65rem 1rem; font-family:var(--font-b); font-size:0.68rem;
+  outline:none; cursor:pointer;
+}
+
+.btn {
+  font-family:var(--font-b); font-size:0.66rem; letter-spacing:0.12em;
+  padding:0.65rem 1.25rem; cursor:pointer; border:1px solid; transition:all 0.2s;
+  white-space:nowrap;
+}
+.btn-cy { border-color:rgba(0,245,212,0.5); color:var(--cyan); background:transparent; }
+.btn-cy:hover { background:var(--cyan-glow); border-color:var(--cyan); }
+.btn-re { border-color:rgba(255,51,102,0.5); color:var(--red); background:transparent; }
+.btn-re:hover { background:var(--red-glow); border-color:var(--red); }
+.btn-am { border-color:rgba(255,184,0,0.5); color:var(--amber); background:transparent; }
+.btn-am:hover { background:var(--amber-glow); border-color:var(--amber); }
+.btn-gr { border-color:rgba(57,217,138,0.5); color:var(--green); background:transparent; }
+.btn-gr:hover { background:rgba(57,217,138,0.08); border-color:var(--green); }
+.btn-fill { background:var(--cyan); color:var(--bg); border-color:var(--cyan); font-family:var(--font-d); font-weight:700; font-size:0.6rem; letter-spacing:0.15em; box-shadow:0 0 16px rgba(0,245,212,0.2); }
+.btn-fill:hover { background:var(--cyan2); box-shadow:0 0 28px rgba(0,245,212,0.35); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position:fixed; inset:0; z-index:7000;
+  background:rgba(4,5,13,0.88); backdrop-filter:blur(8px);
+  display:flex; align-items:center; justify-content:center;
+  padding:1rem;
+}
+.modal-overlay.hidden { display:none; }
+.modal-box {
+  background:var(--surface); border:1px solid var(--border2);
+  width:100%; max-width:640px; max-height:90vh;
+  display:flex; flex-direction:column; overflow:hidden;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+  position: relative;
+}
+.modal-box::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0.5;
+}
+.modal-header {
+  padding:1.25rem 1.5rem; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  background: var(--surface2);
+}
+.modal-title { font-family:var(--font-d); font-size:0.76rem; font-weight:700; letter-spacing:0.12em; }
+.modal-close { background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:1.1rem; padding: 0.2rem; transition:color 0.2s; }
+.modal-close:hover { color:var(--red); }
+.modal-body { padding:1.5rem; overflow-y:auto; flex:1; }
+.modal-footer { padding:1rem 1.5rem; border-top:1px solid var(--border); display:flex; gap:0.75rem; justify-content:flex-end; background: var(--surface2); }
+
+/* ── FORM LAYOUT ── */
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; }
+.form-grid .full { grid-column:1/-1; }
+.form-group { display:flex; flex-direction:column; gap:0.4rem; }
+.f-label { font-size:0.56rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--text-dim); }
+.f-input {
+  background:var(--surface2); border:1px solid var(--border);
+  color:var(--text); padding:0.7rem 0.9rem;
+  font-family:var(--font-b); font-size:0.73rem; outline:none;
+  transition:border-color 0.2s, box-shadow 0.2s;
+}
+.f-input:focus { border-color:var(--cyan); box-shadow: 0 0 0 2px rgba(0,245,212,0.05); }
+.f-textarea { resize:vertical; min-height:80px; }
+
+/* ── FLAGS ── */
+.flags-section { margin-top:1.25rem; }
+.flags-title { font-size:0.6rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--amber); margin-bottom:0.75rem; }
+.flags-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:0.5rem; }
+.flag-item {
+  display:flex; align-items:center; gap:0.6rem;
+  background:var(--surface2); border:1px solid var(--border);
+  padding:0.6rem 0.9rem; cursor:pointer; transition:border-color 0.2s, background 0.2s;
+}
+.flag-item:hover { border-color:var(--amber); }
+.flag-item.checked { border-color:rgba(255,51,102,0.5); background:var(--red-glow); }
+.flag-cb { width:13px; height:13px; accent-color:var(--red); cursor:pointer; }
+.flag-text { font-size:0.63rem; letter-spacing:0.05em; color:var(--text-mid); }
+.flag-item.checked .flag-text { color:var(--red); }
+
+/* ── FILE UPLOAD ── */
+.upload-zone {
+  border:2px dashed var(--border2); padding:2rem; text-align:center;
+  cursor:pointer; transition:border-color 0.2s, background 0.2s; background:var(--surface2);
+}
+.upload-zone:hover { border-color:var(--cyan); background:rgba(0,245,212,0.02); }
+.upload-zone p { font-family:var(--font-s); font-size:0.78rem; color:var(--text-dim); font-weight:300; }
+.upload-zone .u-icon { font-size:2rem; margin-bottom:0.5rem; }
+.file-list { margin-top:0.75rem; display:flex; flex-direction:column; gap:0.4rem; }
+.file-chip {
+  background:var(--surface3); border:1px solid var(--border);
+  padding:0.45rem 0.9rem; display:flex; align-items:center; justify-content:space-between;
+  font-size:0.65rem; color:var(--text-mid);
+}
+.file-chip a { color:var(--cyan); text-decoration:none; font-size:0.6rem; }
+
+/* ── ACTIVITY FEED ── */
+.feed { display:flex; flex-direction:column; gap:0; }
+.feed-item {
+  display:grid; grid-template-columns:auto 1fr auto;
+  gap:1rem; padding:0.95rem 1.25rem; border-bottom:1px solid var(--border);
+  background:var(--surface); align-items:center;
+  transition: background 0.15s;
+}
+.feed-item:last-child { border-bottom:none; }
+.feed-item:hover { background: var(--surface2); }
+.feed-dot { width:7px; height:7px; border-radius:50%; background:var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+.feed-dot.amber { background:var(--amber); box-shadow: 0 0 8px var(--amber); }
+.feed-dot.red { background:var(--red); box-shadow: 0 0 8px var(--red); }
+.feed-msg { font-size:0.7rem; color:var(--text-mid); }
+.feed-msg strong { color:var(--text); }
+.feed-time { font-size:0.58rem; color:var(--text-dim); white-space:nowrap; }
+
+/* ── PROJECT CARD ── */
+.proj-card {
+  background:var(--surface); border:1px solid var(--border); padding:1.5rem;
+  transition:border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  position: relative; overflow: hidden;
+}
+.proj-card:hover { border-color:rgba(0,245,212,0.25); box-shadow:0 8px 24px rgba(0,0,0,0.25); transform: translateY(-2px); }
+.proj-top { display:flex; justify-content:space-between; align-items:start; margin-bottom:0.5rem; }
+.proj-name { font-family:var(--font-d); font-size:0.78rem; font-weight:700; }
+.proj-desc { font-family:var(--font-s); font-size:0.78rem; color:var(--text-dim); margin-bottom:1.25rem; line-height:1.7; font-weight:300; }
+.prog-track { height:3px; background:var(--border); border-radius:2px; overflow:hidden; margin-bottom:0.4rem; }
+.prog-fill { height:100%; background:linear-gradient(90deg, var(--cyan), var(--cyan2)); box-shadow:0 0 8px rgba(0,245,212,0.4); border-radius:2px; transition:width 1s ease; }
+.proj-foot { display:flex; justify-content:space-between; font-size:0.6rem; color:var(--text-dim); }
+.proj-pct { color:var(--cyan); font-family:var(--font-d); }
+.grid-2 { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1.5rem; margin-bottom:1.5rem; }
+
+/* ── DOCUMENT CARD ── */
+.doc-card {
+  background:var(--surface); border:1px solid var(--border);
+  padding:1.25rem; display:flex; align-items:center; gap:1rem;
+  transition:border-color 0.2s, background 0.2s;
+}
+.doc-card:hover { border-color:rgba(0,245,212,0.25); background:var(--surface2); }
+.doc-icon { font-size:1.6rem; flex-shrink: 0; }
+.doc-name { font-size:0.78rem; font-weight:bold; color:var(--text); margin-bottom:0.25rem; }
+.doc-meta { font-size:0.6rem; color:var(--text-dim); }
+.doc-actions { margin-left:auto; display:flex; gap:0.5rem; flex-shrink: 0; }
+
+/* ── SETTINGS ── */
+.settings-section { margin-bottom:2.5rem; }
+.settings-title {
+  font-family:var(--font-d); font-size:0.68rem; font-weight:700; letter-spacing:0.18em;
+  color:var(--cyan); margin-bottom:1.25rem; padding-bottom:0.5rem;
+  border-bottom:1px solid var(--border); text-transform:uppercase;
+}
+.setting-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:0.9rem 0; border-bottom:1px solid var(--border);
+}
+.setting-row:last-child { border-bottom:none; }
+.setting-lbl { font-size:0.72rem; color:var(--text); }
+.setting-desc { font-family:var(--font-s); font-size:0.7rem; color:var(--text-dim); margin-top:0.25rem; font-weight:300; }
+
+/* Toggle switch */
+.toggle { position:relative; width:40px; height:22px; }
+.toggle input { opacity:0; width:0; height:0; }
+.toggle-slider {
+  position:absolute; inset:0; background:var(--border2); cursor:pointer;
+  border-radius:22px; transition:background 0.2s;
+}
+.toggle-slider::before {
+  content:''; position:absolute; width:16px; height:16px; border-radius:50%;
+  left:3px; top:3px; background:white; transition:transform 0.2s;
+}
+.toggle input:checked + .toggle-slider { background:var(--cyan); box-shadow:0 0 12px rgba(0,245,212,0.3); }
+.toggle input:checked + .toggle-slider::before { transform:translateX(18px); }
+
+/* Role badge colors */
+.role-admin { color:var(--purple)!important; border-color:rgba(155,93,229,0.5)!important; background:rgba(155,93,229,0.05)!important; }
+.role-president { color:var(--cyan)!important; border-color:rgba(0,245,212,0.5)!important; background:rgba(0,245,212,0.05)!important; }
+.role-auditor { color:var(--amber)!important; border-color:rgba(255,184,0,0.5)!important; background:rgba(255,184,0,0.05)!important; }
+.role-treasurer { color:var(--green)!important; border-color:rgba(57,217,138,0.5)!important; background:rgba(57,217,138,0.05)!important; }
+.role-member { color:var(--text-mid)!important; border-color:rgba(122,132,168,0.5)!important; }
+.role-pending { color:var(--red)!important; border-color:rgba(255,51,102,0.5)!important; background:rgba(255,51,102,0.05)!important; }
+.role-pio { color:#0ea5e9!important; border-color:rgba(14,165,233,0.5)!important; background:rgba(14,165,233,0.05)!important; }
+
+/* ── PIO ANNOUNCEMENT BADGE ── */
+.pio-badge {
+  display:inline-flex; align-items:center; gap:0.3rem;
+  background:rgba(14,165,233,0.1); border:1px solid rgba(14,165,233,0.3);
+  color:#0ea5e9; font-size:0.52rem; letter-spacing:0.14em;
+  padding:0.18rem 0.5rem; text-transform:uppercase; vertical-align:middle;
+  margin-left:0.4rem;
+}
+
+/* ── ADMIN DASHBOARD ── */
+.admin-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1.25rem; margin-bottom:2rem; }
+.admin-card {
+  background:var(--surface); border:1px solid var(--border);
+  padding:1.5rem; position:relative; overflow:hidden;
+  transition:transform 0.2s, border-color 0.2s;
+}
+.admin-card:hover { transform:translateY(-2px); border-color:var(--border2); }
+.admin-card-title { font-size:0.55rem; letter-spacing:0.28em; text-transform:uppercase; color:var(--text-dim); margin-bottom:0.75rem; }
+.admin-card-val { font-family:var(--font-d); font-size:1.8rem; font-weight:900; color:var(--cyan); line-height:1; margin-bottom:0.3rem; text-shadow:0 0 16px rgba(0,245,212,0.3); }
+.admin-card-val.purple { color:var(--purple); text-shadow:0 0 16px rgba(155,93,229,0.3); }
+.admin-card-val.amber { color:var(--amber); text-shadow:0 0 16px rgba(255,184,0,0.3); }
+.admin-card-val.red { color:var(--red); text-shadow:0 0 16px rgba(255,51,102,0.3); }
+.admin-card-val.green { color:var(--green); text-shadow:0 0 16px rgba(57,217,138,0.3); }
+.admin-card-sub { font-size:0.62rem; color:var(--text-mid); }
+.admin-card-bar { position:absolute; bottom:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--cyan),transparent); }
+.admin-card-bar.purple { background:linear-gradient(90deg,transparent,var(--purple),transparent); }
+.admin-card-bar.amber { background:linear-gradient(90deg,transparent,var(--amber),transparent); }
+.admin-card-bar.red { background:linear-gradient(90deg,transparent,var(--red),transparent); }
+
+.admin-section { margin-bottom:2.5rem; }
+.admin-section-title {
+  font-family:var(--font-d); font-size:0.62rem; font-weight:700;
+  letter-spacing:0.2em; color:var(--cyan); text-transform:uppercase;
+  margin-bottom:1.25rem; padding-bottom:0.6rem; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:0.6rem;
+}
+
+/* Role breakdown pills */
+.role-breakdown { display:flex; flex-wrap:wrap; gap:0.6rem; margin-bottom:1.5rem; }
+.role-pill {
+  display:flex; align-items:center; gap:0.5rem;
+  background:var(--surface2); border:1px solid var(--border);
+  padding:0.5rem 1rem; font-size:0.65rem;
+}
+.role-pill-count { font-family:var(--font-d); font-size:1rem; font-weight:900; }
+
+/* Pending approvals */
+.pending-list { display:flex; flex-direction:column; gap:0.6rem; }
+.pending-item {
+  display:flex; align-items:center; gap:1rem;
+  background:var(--surface); border:1px solid rgba(255,184,0,0.2);
+  padding:0.9rem 1.25rem;
+}
+.pending-item-info { flex:1; }
+.pending-item-name { font-size:0.72rem; font-weight:bold; color:var(--text); }
+.pending-item-email { font-size:0.6rem; color:var(--text-dim); margin-top:0.15rem; }
+.pending-item-actions { display:flex; gap:0.5rem; flex-shrink:0; }
+
+/* PWA / system status */
+.sys-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1rem; }
+.sys-item {
+  background:var(--surface); border:1px solid var(--border);
+  padding:1rem 1.25rem; display:flex; align-items:center; gap:0.75rem;
+}
+.sys-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.sys-dot.ok { background:var(--green); box-shadow:0 0 8px rgba(57,217,138,0.6); }
+.sys-dot.warn { background:var(--amber); box-shadow:0 0 8px rgba(255,184,0,0.6); }
+.sys-dot.err { background:var(--red); box-shadow:0 0 8px rgba(255,51,102,0.6); }
+.sys-lbl { font-size:0.65rem; color:var(--text); }
+.sys-val { font-size:0.58rem; color:var(--text-dim); margin-top:0.15rem; }
+
+/* Officer management table */
+.officer-photo-thumb {
+  width:36px; height:36px; border-radius:50%;
+  object-fit:cover; border:2px solid var(--border2);
+  background:var(--surface2);
+}
+.officer-photo-placeholder {
+  width:36px; height:36px; border-radius:50%;
+  background:linear-gradient(135deg,rgba(0,245,212,0.2),rgba(0,245,212,0.05));
+  border:2px solid rgba(0,245,212,0.3);
+  display:flex; align-items:center; justify-content:center;
+  font-size:0.75rem; color:var(--cyan); flex-shrink:0;
+}
+
+/* Upload zone for officer photo */
+.photo-upload-zone {
+  display:flex; align-items:center; gap:1rem; margin-top:0.5rem;
+}
+.photo-preview-wrap { position:relative; }
+.photo-preview-img {
+  width:72px; height:72px; border-radius:50%;
+  object-fit:cover; border:2px solid rgba(0,245,212,0.3);
+  display:none;
+}
+.photo-preview-placeholder {
+  width:72px; height:72px; border-radius:50%;
+  background:var(--surface2); border:2px dashed var(--border2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.5rem; color:var(--text-dim); cursor:pointer;
+  transition:border-color 0.2s;
+}
+.photo-preview-placeholder:hover { border-color:var(--cyan); }
+.color-picker-row { display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.5rem; }
+.color-swatch {
+  width:24px; height:24px; border-radius:50%; cursor:pointer;
+  border:2px solid transparent; transition:border-color 0.2s, transform 0.15s;
+}
+.color-swatch:hover, .color-swatch.selected { border-color:white; transform:scale(1.15); }
+
+/* ── TOAST ── */
+.toast-host { position:fixed; bottom:2rem; right:2rem; z-index:9999; display:flex; flex-direction:column; gap:0.75rem; }
+.rs-toast {
+  background:var(--surface2); border:1px solid rgba(0,245,212,0.3);
+  padding:0.9rem 1.25rem; font-size:0.7rem; min-width:250px;
+  display:flex; align-items:center; gap:0.75rem;
+  animation:tin 0.3s ease; backdrop-filter:blur(8px);
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+}
+.rs-toast.err { border-color:rgba(255,51,102,0.4); }
+.rs-toast.warn { border-color:rgba(255,184,0,0.4); }
+@keyframes tin { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+/* ── EMPTY STATE ── */
+.empty { text-align:center; padding:3rem 2rem; color:var(--text-dim); font-size:0.68rem; letter-spacing:0.12em; border:1px dashed var(--border); }
+
+/* ── RESPONSIVE ── */
+@media (max-width:768px) {
+  #sidebar { position:absolute; z-index:200; height:calc(100vh - var(--topbar-h)); top:var(--topbar-h); left:0; transform:translateX(-100%); transition:transform 0.25s; }
+  #sidebar.open { transform:translateX(0); }
+  #main { padding:1.5rem; }
+  .form-grid { grid-template-columns:1fr; }
+  .stat-row { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- PAGE LOADER -->
+<div id="pageLoader">
+  <div class="ldr-inner">
+    <div class="ldr-hex-wrap">
+      <div class="ldr-ring ldr-ring-1"></div>
+      <div class="ldr-ring ldr-ring-2"></div>
+      <div class="ldr-ring ldr-ring-3"></div>
+      <div class="ldr-orbit-dot"></div>
+      <div class="ldr-center">🤖</div>
+    </div>
+    <div class="ldr-logo-name">ROBOSYS</div>
+    <div class="ldr-tagline">Audit &amp; Operations System</div>
+    <div class="ldr-bar-wrap"><div class="ldr-bar-fill"></div></div>
+    <div class="ldr-status">Initializing…</div>
+  </div>
+</div>
+
+<!-- AUTH OVERLAY -->
+<div id="authOverlay">
+  <div class="auth-bg-grid"></div>
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🤖</div>
+      <div class="auth-logo-name">ROBOSYS</div>
+    </div>
+    <p class="auth-tagline">Robotics Club Operations &amp; Audit System</p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchTab('signup')">Register</button>
+    </div>
+
+    <!-- LOGIN -->
+    <form class="auth-form" id="loginForm" onsubmit="emailLogin(event)">
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" id="loginEmail" class="form-input" placeholder="you@example.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" id="loginPass" class="form-input" placeholder="••••••••" required>
+      </div>
+      <div class="auth-err" id="loginErr"></div>
+      <button type="submit" class="btn-primary" id="loginBtn">Sign In</button>
+      <div class="auth-divider">or</div>
+      <button type="button" class="btn-google" onclick="googleLogin()">
+        <span style="font-family:sans-serif;font-weight:700;font-size:0.9rem;">G</span> Continue with Google
+      </button>
+    </form>
+
+    <!-- SIGNUP -->
+    <form class="auth-form hidden" id="signupForm" onsubmit="emailSignup(event)">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" id="signupName" class="form-input" placeholder="Your full name" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" id="signupEmail" class="form-input" placeholder="you@example.com" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" id="signupPass" class="form-input" placeholder="Min. 6 characters" required minlength="6">
+      </div>
+      <div class="auth-err" id="signupErr"></div>
+      <button type="submit" class="btn-primary" id="signupBtn">Create Account</button>
+      <div class="auth-divider">or</div>
+      <button type="button" class="btn-google" onclick="googleLogin()">
+        <span style="font-family:sans-serif;font-weight:700;font-size:0.9rem;">G</span> Continue with Google
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- PENDING OVERLAY -->
+<div id="pendingOverlay" class="hidden">
+  <div class="pending-box">
+    <div class="pending-icon">⏳</div>
+    <div class="pending-title">Access Pending</div>
+    <div class="pending-msg">
+      Your account has been created successfully!<br>
+      <strong style="color:var(--text);">Please contact the Club President to assign your role.</strong><br><br>
+      You'll have full access once your role is verified.
+    </div>
+    <button class="btn-logout-pending" onclick="logout()">Sign Out</button>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <div class="topbar-left">
+      <button class="icon-btn" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+      <div class="topbar-logo">ROBOSYS</div>
+      <div class="topbar-breadcrumb" id="breadcrumb">/ Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">🌙</button>
+      <div class="topbar-user">
+        <span id="topbarEmail">—</span>
+        <span class="user-role-badge" id="topbarRole">—</span>
+      </div>
+      <button class="icon-btn" onclick="logout()" title="Sign out">⏻</button>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="app-body">
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+      <div class="sidebar-section-label">Main</div>
+      <div class="nav-item active" data-module="dashboard">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </div>
+      <div class="nav-item" data-module="audits">
+        <span class="nav-icon">🔍</span>
+        <span class="nav-label">Audits</span>
+      </div>
+      <div class="nav-item" data-module="announcements">
+        <span class="nav-icon">📢</span>
+        <span class="nav-label">Announcements</span>
+      </div>
+      <div class="nav-item" data-module="projects">
+        <span class="nav-icon">🚀</span>
+        <span class="nav-label">Projects</span>
+      </div>
+      <div class="nav-item" data-module="events">
+        <span class="nav-icon">📅</span>
+        <span class="nav-label">Events</span>
+      </div>
+      <div class="nav-item" data-module="documents">
+        <span class="nav-icon">📁</span>
+        <span class="nav-label">Documents</span>
+      </div>
+      <div class="sidebar-section-label">System</div>
+      <div class="nav-item" data-module="settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </div>
+      <div class="nav-item" data-module="admin" id="adminNavItem" style="display:none;">
+        <span class="nav-icon">🛡️</span>
+        <span class="nav-label">Admin Panel</span>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="nav-item" onclick="logout()">
+          <span class="nav-icon">⏻</span>
+          <span class="nav-label">Sign Out</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div id="main">
+
+      <!-- ══ DASHBOARD ══ -->
+      <div class="module-panel active" id="mod-dashboard">
+        <div class="mod-header">
+          <div class="mod-title">Dashboard</div>
+          <div class="mod-sub">Overview of club operations and recent activity</div>
+        </div>
+        <div class="stat-row">
+          <div class="scard"><div class="scard-glow"></div><div class="scard-val" id="d-total">0</div><div class="scard-lbl">Total Audits</div></div>
+          <div class="scard amber"><div class="scard-glow"></div><div class="scard-val" id="d-pending">0</div><div class="scard-lbl">Pending Review</div></div>
+          <div class="scard red"><div class="scard-glow"></div><div class="scard-val" id="d-flagged">0</div><div class="scard-lbl">Flagged</div></div>
+          <div class="scard green"><div class="scard-glow"></div><div class="scard-val" id="d-verified">0</div><div class="scard-lbl">Verified</div></div>
+        </div>
+        <div style="font-family:var(--font-d);font-size:0.6rem;letter-spacing:0.25em;color:var(--text-dim);margin-bottom:0.75rem;text-transform:uppercase;">Recent Activity</div>
+        <div class="rs-table-wrap" style="margin-bottom:2rem;">
+          <div class="feed" id="activityFeed">
+            <div class="feed-item"><div class="feed-dot"></div><div class="feed-msg">Loading activity…</div><div class="feed-time">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ AUDITS ══ -->
+      <div class="module-panel" id="mod-audits">
+        <div class="mod-header">
+          <div class="mod-title">Audit Records</div>
+          <div class="mod-sub">Submit, review, flag, and approve financial audit records</div>
+        </div>
+        <div class="toolbar">
+          <input type="text" class="rs-input" id="auditSearch" placeholder="Search audits…" oninput="filterAudits()" style="flex:1;min-width:180px;">
+          <select class="rs-select" id="auditFilter" onchange="filterAudits()">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="verified">Verified</option>
+            <option value="flagged">Flagged</option>
+            <option value="locked">Locked</option>
+          </select>
+          <button class="btn btn-fill" id="btnNewAudit" onclick="openAuditModal()" style="display:none;">+ New Audit</button>
+        </div>
+        <div class="rs-table-wrap">
+          <table class="rs-table">
+            <thead>
+              <tr>
+                <th>Title</th><th>Category</th><th>Amount</th>
+                <th>Status</th><th>Flags</th><th>Date</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody">
+              <tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:2rem;">Loading audits…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ ANNOUNCEMENTS ══ -->
+      <div class="module-panel" id="mod-announcements">
+        <div class="mod-header">
+          <div class="mod-title">Announcements</div>
+          <div class="mod-sub">Internal and public club announcements</div>
+        </div>
+        <div class="toolbar">
+          <input type="text" class="rs-input" placeholder="Search…" oninput="filterAnnouncements(this.value)" style="flex:1;">
+          <button class="btn btn-fill" id="btnNewAnn" onclick="openAnnModal()" style="display:none;">+ New Post</button>
+        </div>
+        <div class="feed rs-table-wrap" id="annFeed">
+          <div style="padding:2rem;text-align:center;color:var(--text-dim);">Loading…</div>
+        </div>
+      </div>
+
+      <!-- ══ PROJECTS ══ -->
+      <div class="module-panel" id="mod-projects">
+        <div class="mod-header">
+          <div class="mod-title">Projects</div>
+          <div class="mod-sub">Track ongoing projects, milestones, and progress</div>
+        </div>
+        <div class="toolbar">
+          <button class="btn btn-fill" id="btnNewProj" onclick="openProjModal()" style="display:none;">+ New Project</button>
+        </div>
+        <div class="grid-2" id="projGrid">
+          <div class="empty">Loading projects…</div>
+        </div>
+      </div>
+
+      <!-- ══ EVENTS ══ -->
+      <div class="module-panel" id="mod-events">
+        <div class="mod-header">
+          <div class="mod-title">Events</div>
+          <div class="mod-sub">Workshops, deadlines, and club activities</div>
+        </div>
+        <div class="toolbar">
+          <button class="btn btn-fill" id="btnNewEvent" onclick="openEventModal()" style="display:none;">+ New Event</button>
+        </div>
+        <div class="rs-table-wrap">
+          <table class="rs-table">
+            <thead><tr><th>Event</th><th>Date</th><th>Type</th><th>RSVP</th><th>Action</th></tr></thead>
+            <tbody id="eventTableBody">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:2rem;">Loading events…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══ DOCUMENTS ══ -->
+      <div class="module-panel" id="mod-documents">
+        <div class="mod-header">
+          <div class="mod-title">Documents</div>
+          <div class="mod-sub">PDFs, contracts, and club records</div>
+        </div>
+        <div class="toolbar">
+          <button class="btn btn-fill" id="btnUploadDoc" onclick="openDocModal()" style="display:none;">+ Upload Document</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem;" id="docList">
+          <div style="padding:2rem;text-align:center;color:var(--text-dim);">Loading documents…</div>
+        </div>
+      </div>
+
+      <!-- ══ SETTINGS ══ -->
+      <div class="module-panel" id="mod-settings">
+        <div class="mod-header">
+          <div class="mod-title">Settings</div>
+          <div class="mod-sub">Role management, system configuration, and preferences</div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-title">Appearance</div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-lbl">Dark Mode</div>
+              <div class="setting-desc">Toggle between dark and light theme</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="darkModeToggle" checked onchange="applyTheme()">
+              <div class="toggle-slider"></div>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-section" id="roleSection" style="display:none;">
+          <div class="settings-title">Role Management</div>
+          <div class="toolbar" style="margin-bottom:1rem;">
+            <input type="text" class="rs-input" id="roleSearchInput" placeholder="Search members…" oninput="filterRoleTable(this.value)" style="flex:1;">
+          </div>
+          <div class="rs-table-wrap">
+            <table class="rs-table">
+              <thead><tr><th>Name / Email</th><th>Current Role</th><th>Change Role</th><th>Action</th></tr></thead>
+              <tbody id="roleTableBody">
+                <tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:2rem;">Loading members…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-title">My Account</div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-lbl" id="myEmail">—</div>
+              <div class="setting-desc" id="myRole">—</div>
+            </div>
+            <button class="btn btn-re" onclick="logout()">Sign Out</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /app-body -->
+</div><!-- /app -->
+
+<!-- ══ ADMIN MODULE (inserted just before /main closing) ══ -->
+<script>
+// Inject admin panel into #main after DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  const main = document.getElementById('main');
+  const adminPanel = document.createElement('div');
+  adminPanel.className = 'module-panel';
+  adminPanel.id = 'mod-admin';
+  adminPanel.innerHTML = `
+    <div class="mod-header">
+      <div class="mod-title">Admin Panel</div>
+      <div class="mod-sub">System overview, user management, officers, and PWA controls</div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="admin-grid" id="adminStatCards">
+      <div class="admin-card">
+        <div class="admin-card-bar"></div>
+        <div class="admin-card-title">Total Members</div>
+        <div class="admin-card-val" id="adm-total">—</div>
+        <div class="admin-card-sub">Registered accounts</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-card-bar amber"></div>
+        <div class="admin-card-title">Pending Approval</div>
+        <div class="admin-card-val amber" id="adm-pending">—</div>
+        <div class="admin-card-sub">Awaiting role assignment</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-card-bar"></div>
+        <div class="admin-card-title">Active Officers</div>
+        <div class="admin-card-val" id="adm-officers">—</div>
+        <div class="admin-card-sub">Profiles on public page</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-card-bar red"></div>
+        <div class="admin-card-title">Flagged Audits</div>
+        <div class="admin-card-val red" id="adm-flags">—</div>
+        <div class="admin-card-sub">Require review</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-card-bar purple"></div>
+        <div class="admin-card-title">Announcements</div>
+        <div class="admin-card-val purple" id="adm-anns">—</div>
+        <div class="admin-card-sub">Total published</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-card-bar" style="background:linear-gradient(90deg,transparent,var(--green),transparent)"></div>
+        <div class="admin-card-title">SW Cache Size</div>
+        <div class="admin-card-val green" id="adm-cache">—</div>
+        <div class="admin-card-sub">Cached entries</div>
+      </div>
+    </div>
+
+    <!-- ROLE BREAKDOWN -->
+    <div class="admin-section">
+      <div class="admin-section-title">📊 Role Breakdown</div>
+      <div class="role-breakdown" id="adminRoleBreakdown">
+        <div style="color:var(--text-dim);font-size:0.7rem;">Loading…</div>
+      </div>
+    </div>
+
+    <!-- PENDING APPROVALS -->
+    <div class="admin-section">
+      <div class="admin-section-title">⏳ Pending Approvals
+        <span id="admPendingBadge" style="background:rgba(255,184,0,0.15);border:1px solid rgba(255,184,0,0.4);color:var(--amber);font-size:0.55rem;padding:0.15rem 0.55rem;border-radius:2px;">0</span>
+      </div>
+      <div class="pending-list" id="adminPendingList">
+        <div style="color:var(--text-dim);font-size:0.7rem;">No pending approvals.</div>
+      </div>
+    </div>
+
+    <!-- OFFICER MANAGEMENT -->
+    <div class="admin-section">
+      <div class="admin-section-title" style="justify-content:space-between;">
+        <span>👥 Officer Profiles</span>
+        <button class="btn btn-fill" style="font-size:0.58rem;padding:0.4rem 1rem;" onclick="openOfficerModal()">+ Add Officer</button>
+      </div>
+      <div class="rs-table-wrap">
+        <table class="rs-table">
+          <thead><tr><th>Photo</th><th>Name</th><th>Position</th><th>Role Color</th><th>Order</th><th>Actions</th></tr></thead>
+          <tbody id="officerTableBody">
+            <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:2rem;">Loading officers…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SYSTEM HEALTH -->
+    <div class="admin-section">
+      <div class="admin-section-title">🩺 System Health</div>
+      <div class="sys-grid" id="sysHealthGrid">
+        <div class="sys-item">
+          <div class="sys-dot" id="sh-firebase"></div>
+          <div><div class="sys-lbl">Firebase</div><div class="sys-val" id="sh-firebase-val">Checking…</div></div>
+        </div>
+        <div class="sys-item">
+          <div class="sys-dot" id="sh-sw"></div>
+          <div><div class="sys-lbl">Service Worker</div><div class="sys-val" id="sh-sw-val">Checking…</div></div>
+        </div>
+        <div class="sys-item">
+          <div class="sys-dot" id="sh-push"></div>
+          <div><div class="sys-lbl">Push Notifications</div><div class="sys-val" id="sh-push-val">Checking…</div></div>
+        </div>
+        <div class="sys-item">
+          <div class="sys-dot" id="sh-online"></div>
+          <div><div class="sys-lbl">Network</div><div class="sys-val" id="sh-online-val">Checking…</div></div>
+        </div>
+        <div class="sys-item">
+          <div class="sys-dot" id="sh-periodic"></div>
+          <div><div class="sys-lbl">Periodic Sync</div><div class="sys-val" id="sh-periodic-val">Checking…</div></div>
+        </div>
+        <div class="sys-item">
+          <div class="sys-dot" id="sh-cloudinary"></div>
+          <div><div class="sys-lbl">Cloudinary</div><div class="sys-val" id="sh-cloudinary-val">Configured</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PWA CONTROLS -->
+    <div class="admin-section">
+      <div class="admin-section-title">📱 PWA Controls</div>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+        <button class="btn btn-cy" onclick="admPurgeCache()">🗑 Purge SW Cache</button>
+        <button class="btn btn-cy" onclick="admCheckQueue()">📋 Check Offline Queue</button>
+        <button class="btn btn-cy" onclick="admRegisterPeriodic()">🔄 Register Periodic Sync</button>
+        <button class="btn btn-cy" onclick="admSendTestPush()">🔔 Test Push Notification</button>
+      </div>
+      <div style="margin-top:1rem;font-size:0.65rem;color:var(--text-mid);" id="pwaControlsLog"></div>
+    </div>
+
+    <!-- QUICK ANNOUNCEMENT (PIO/Admin) -->
+    <div class="admin-section" id="admAnnSection">
+      <div class="admin-section-title">📢 Quick Announcement (PIO/Admin)</div>
+      <div style="display:flex;flex-direction:column;gap:0.8rem;max-width:600px;">
+        <input type="text" class="rs-input" id="adm-ann-title" placeholder="Announcement title…">
+        <textarea class="rs-input" id="adm-ann-body" rows="3" style="resize:vertical;padding:0.75rem;" placeholder="Announcement body…"></textarea>
+        <div style="display:flex;gap:0.75rem;align-items:center;">
+          <select class="rs-select" id="adm-ann-vis">
+            <option value="false">Internal Only</option>
+            <option value="true">Public</option>
+          </select>
+          <select class="rs-select" id="adm-ann-priority">
+            <option value="normal">Normal</option>
+            <option value="urgent">🔴 Urgent</option>
+            <option value="info">🔵 Info</option>
+          </select>
+          <button class="btn btn-fill" onclick="admPostAnnouncement()">Publish</button>
+        </div>
+      </div>
+    </div>
+  `;
+  main.appendChild(adminPanel);
+});
+</script>
+
+<!-- AUDIT MODAL -->
+<div class="modal-overlay hidden" id="auditModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="auditModalTitle">New Audit Record</div>
+      <button class="modal-close" onclick="closeModal('auditModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="auditForm" onsubmit="submitAudit(event)">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="f-label">Title *</label>
+            <input type="text" class="f-input" id="af-title" placeholder="Expense title" required>
+          </div>
+          <div class="form-group">
+            <label class="f-label">Amount (₱) *</label>
+            <input type="number" class="f-input" id="af-amount" placeholder="0.00" step="0.01" required>
+          </div>
+          <div class="form-group">
+            <label class="f-label">Category *</label>
+            <select class="f-input" id="af-category" required>
+              <option value="">Select category</option>
+              <option>Materials</option><option>Equipment</option><option>Registration</option>
+              <option>Transportation</option><option>Food</option><option>Software</option>
+              <option>Marketing</option><option>Miscellaneous</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label class="f-label">Description *</label>
+            <textarea class="f-input f-textarea" id="af-description" placeholder="Detailed description of the expense" required></textarea>
+          </div>
+          <div class="form-group full">
+            <label class="f-label">Proof / Receipts</label>
+            <div class="upload-zone" onclick="document.getElementById('af-files').click()">
+              <div class="u-icon">📎</div>
+              <p>Click to upload receipts or proof documents</p>
+              <p style="font-size:0.6rem;margin-top:0.25rem;opacity:0.6;">PDF, JPG, PNG accepted</p>
+            </div>
+            <input type="file" id="af-files" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="handleFileSelect(event)">
+            <div class="file-list" id="af-file-list"></div>
+          </div>
+        </div>
+
+        <div class="flags-section" id="flagsSection" style="display:none;">
+          <div class="flags-title">⚠ Audit Flags</div>
+          <div class="flags-grid">
+            <div class="flag-item" onclick="toggleFlag(this,'missing_proof')">
+              <input type="checkbox" class="flag-cb" data-flag="missing_proof"> <span class="flag-text">Missing Proof</span>
+            </div>
+            <div class="flag-item" onclick="toggleFlag(this,'incorrect_amount')">
+              <input type="checkbox" class="flag-cb" data-flag="incorrect_amount"> <span class="flag-text">Incorrect Amount</span>
+            </div>
+            <div class="flag-item" onclick="toggleFlag(this,'unauthorized_expense')">
+              <input type="checkbox" class="flag-cb" data-flag="unauthorized_expense"> <span class="flag-text">Unauthorized Expense</span>
+            </div>
+            <div class="flag-item" onclick="toggleFlag(this,'incomplete_description')">
+              <input type="checkbox" class="flag-cb" data-flag="incomplete_description"> <span class="flag-text">Incomplete Description</span>
+            </div>
+            <div class="flag-item" onclick="toggleFlag(this,'incorrect_category')">
+              <input type="checkbox" class="flag-cb" data-flag="incorrect_category"> <span class="flag-text">Incorrect Category</span>
+            </div>
+            <div class="flag-item" onclick="toggleFlag(this,'suspicious_file')">
+              <input type="checkbox" class="flag-cb" data-flag="suspicious_file"> <span class="flag-text">Suspicious File</span>
+            </div>
+            <div class="flag-item" onclick="toggleFlag(this,'duplicate_entry')">
+              <input type="checkbox" class="flag-cb" data-flag="duplicate_entry"> <span class="flag-text">Duplicate Entry</span>
+            </div>
+            <div class="flag-item" onclick="toggleFlag(this,'late_submission')">
+              <input type="checkbox" class="flag-cb" data-flag="late_submission"> <span class="flag-text">Late Submission</span>
+            </div>
+            <div class="flag-item" onclick="toggleFlag(this,'tampered_data')">
+              <input type="checkbox" class="flag-cb" data-flag="tampered_data"> <span class="flag-text">Tampered Data</span>
+            </div>
+            <div class="flag-item" onclick="toggleFlag(this,'deleted_data_attempt')">
+              <input type="checkbox" class="flag-cb" data-flag="deleted_data_attempt"> <span class="flag-text">Delete Attempt</span>
+            </div>
+            <div class="flag-item" onclick="toggleFlag(this,'unauthorized_edit')">
+              <input type="checkbox" class="flag-cb" data-flag="unauthorized_edit"> <span class="flag-text">Unauthorized Edit</span>
+            </div>
+            <div class="flag-item" onclick="toggleFlag(this,'access_anomaly')">
+              <input type="checkbox" class="flag-cb" data-flag="access_anomaly"> <span class="flag-text">Access Anomaly</span>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:1rem;">
+            <label class="f-label">Auditor Comment</label>
+            <textarea class="f-input f-textarea" id="af-comment" placeholder="Add review comment…"></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer" id="auditModalFooter">
+      <button class="btn btn-cy" onclick="closeModal('auditModal')">Cancel</button>
+      <button class="btn btn-fill" id="auditSubmitBtn" onclick="submitAudit()">Submit Audit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ANNOUNCEMENT MODAL -->
+<div class="modal-overlay hidden" id="annModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">New Announcement</div>
+      <button class="modal-close" onclick="closeModal('annModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="f-label">Title *</label>
+          <input type="text" class="f-input" id="ann-title" placeholder="Announcement title" required>
+        </div>
+        <div class="form-group full">
+          <label class="f-label">Content *</label>
+          <textarea class="f-input f-textarea" id="ann-content" rows="5" placeholder="Announcement body…"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="f-label">Visibility</label>
+          <select class="f-input" id="ann-public">
+            <option value="false">Internal Only</option>
+            <option value="true">Public</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="f-label">Attachment (optional)</label>
+          <div class="upload-zone" style="padding:1rem;" onclick="document.getElementById('ann-file').click()">
+            <p>Click to attach file</p>
+          </div>
+          <input type="file" id="ann-file" style="display:none" onchange="handleAnnFile(event)">
+          <div id="ann-file-preview" style="font-size:0.65rem;color:var(--cyan);margin-top:0.4rem;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cy" onclick="closeModal('annModal')">Cancel</button>
+      <button class="btn btn-fill" onclick="submitAnnouncement()">Publish</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="modal-overlay hidden" id="projModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">New Project</div>
+      <button class="modal-close" onclick="closeModal('projModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="f-label">Project Name *</label>
+          <input type="text" class="f-input" id="pj-name" required>
+        </div>
+        <div class="form-group full">
+          <label class="f-label">Description</label>
+          <textarea class="f-input f-textarea" id="pj-desc"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="f-label">Progress (0–100)</label>
+          <input type="number" class="f-input" id="pj-progress" min="0" max="100" value="0">
+        </div>
+        <div class="form-group">
+          <label class="f-label">Current Milestone</label>
+          <input type="text" class="f-input" id="pj-milestone" placeholder="e.g. Phase 1 Complete">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cy" onclick="closeModal('projModal')">Cancel</button>
+      <button class="btn btn-fill" onclick="submitProject()">Save Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- EVENT MODAL -->
+<div class="modal-overlay hidden" id="eventModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">New Event</div>
+      <button class="modal-close" onclick="closeModal('eventModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="f-label">Event Title *</label>
+          <input type="text" class="f-input" id="ev-title" required>
+        </div>
+        <div class="form-group">
+          <label class="f-label">Date *</label>
+          <input type="datetime-local" class="f-input" id="ev-date" required>
+        </div>
+        <div class="form-group">
+          <label class="f-label">Type</label>
+          <select class="f-input" id="ev-type">
+            <option>Workshop</option><option>Meeting</option>
+            <option>Deadline</option><option>Competition</option><option>Social</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="f-label">Description</label>
+          <textarea class="f-input f-textarea" id="ev-desc"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="f-label">Enable RSVP?</label>
+          <select class="f-input" id="ev-rsvp">
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cy" onclick="closeModal('eventModal')">Cancel</button>
+      <button class="btn btn-fill" onclick="submitEvent()">Save Event</button>
+    </div>
+  </div>
+</div>
+
+<!-- OFFICER MODAL -->
+<div class="modal-overlay hidden" id="officerModal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title" id="officerModalTitle">Add Officer</div>
+      <button class="modal-close" onclick="closeModal('officerModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="f-label">Officer Photo</label>
+          <div class="photo-upload-zone">
+            <div class="photo-preview-wrap" onclick="document.getElementById('officer-photo-input').click()">
+              <img id="officer-photo-preview" class="photo-preview-img" src="">
+              <div class="photo-preview-placeholder" id="officer-photo-placeholder">📷</div>
+            </div>
+            <div>
+              <div style="font-size:0.65rem;color:var(--text-mid);margin-bottom:0.5rem;">Click to upload from Cloudinary</div>
+              <div style="font-size:0.58rem;color:var(--text-dim);">JPG, PNG · Will be cropped to circle</div>
+              <div id="officer-photo-url-display" style="font-size:0.58rem;color:var(--cyan);margin-top:0.3rem;word-break:break-all;"></div>
+            </div>
+          </div>
+          <input type="file" id="officer-photo-input" accept="image/*" style="display:none" onchange="handleOfficerPhotoUpload(event)">
+        </div>
+        <div class="form-group">
+          <label class="f-label">Full Name *</label>
+          <input type="text" class="f-input" id="off-name" placeholder="e.g. Juan dela Cruz" required>
+        </div>
+        <div class="form-group">
+          <label class="f-label">Position / Rank *</label>
+          <select class="f-input" id="off-role">
+            <option value="Club President">Club President</option>
+            <option value="Vice President">Vice President</option>
+            <option value="Secretary">Secretary</option>
+            <option value="Treasurer">Treasurer</option>
+            <option value="Auditor">Auditor</option>
+            <option value="PIO / PR">PIO / PR</option>
+            <option value="Technical Lead">Technical Lead</option>
+            <option value="Member">Member</option>
+            <option value="Custom">Custom…</option>
+          </select>
+        </div>
+        <div class="form-group" id="off-custom-group" style="display:none;">
+          <label class="f-label">Custom Position</label>
+          <input type="text" class="f-input" id="off-custom-role" placeholder="Enter custom title">
+        </div>
+        <div class="form-group full">
+          <label class="f-label">Short Bio / Description</label>
+          <textarea class="f-input f-textarea" id="off-desc" placeholder="Briefly describe this officer's responsibilities…"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="f-label">Card Accent Color</label>
+          <div class="color-picker-row" id="officerColorPicker">
+            <div class="color-swatch selected" data-color="cyan" style="background:#00f5d4;" onclick="selectOfficerColor(this,'cyan','#00f5d4')"></div>
+            <div class="color-swatch" data-color="amber" style="background:#ffb800;" onclick="selectOfficerColor(this,'amber','#ffb800')"></div>
+            <div class="color-swatch" data-color="green" style="background:#39d98a;" onclick="selectOfficerColor(this,'green','#39d98a')"></div>
+            <div class="color-swatch" data-color="purple" style="background:#9b5de5;" onclick="selectOfficerColor(this,'purple','#9b5de5')"></div>
+            <div class="color-swatch" data-color="red" style="background:#ff3366;" onclick="selectOfficerColor(this,'red','#ff3366')"></div>
+            <div class="color-swatch" data-color="blue" style="background:#0ea5e9;" onclick="selectOfficerColor(this,'blue','#0ea5e9')"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="f-label">Display Order</label>
+          <input type="number" class="f-input" id="off-order" value="0" min="0" max="99">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cy" onclick="closeModal('officerModal')">Cancel</button>
+      <button class="btn btn-fill" onclick="submitOfficer()">Save Officer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-host" id="toastHost"></div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════
+//  FIREBASE INIT
+// ═══════════════════════════════════════
+const cfg = {
+  apiKey: "AIzaSyALYqsK4T318BlBkzh1Wle1707R-B7mR-E",
+  authDomain: "clubs-de4bb.firebaseapp.com",
+  databaseURL: "https://clubs-de4bb-default-rtdb.firebaseio.com",
+  projectId: "clubs-de4bb",
+  storageBucket: "clubs-de4bb.firebasestorage.app",
+  messagingSenderId: "526275118472",
+  appId: "1:526275118472:web:f99a7d51477defd60aa63d"
+};
+firebase.initializeApp(cfg);
+const auth = firebase.auth();
+const db   = firebase.database();
+
+// Cloudinary
+const CL_CLOUD  = 'damr6r9op';
+const CL_PRESET = 'org-resources';
+
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+let currentUser = null;
+let currentRole = 'pending';
+let allAudits   = [];
+let allUsers    = [];
+let pendingFiles = []; // cloudinary URLs
+let annFileUrl   = null;
+let editAuditKey = null;
+
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+function toast(msg, type='ok') {
+  const h = document.getElementById('toastHost');
+  const el = document.createElement('div');
+  el.className = `rs-toast${type==='err'?' err':type==='warn'?' warn':''}`;
+  el.innerHTML = `<span>${{ok:'✓',err:'⚠',warn:'⚡'}[type]||'•'}</span> ${msg}`;
+  h.appendChild(el);
+  setTimeout(() => el.remove(), 4500);
+}
+
+// ═══════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════
+function fmtPeso(v) { return '₱'+parseFloat(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(ts) { return new Date(ts||Date.now()).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}); }
+function fmtRelative(ts) {
+  const d = Date.now()-ts; const m=60000,h=3600000,day=86400000;
+  if(d<m) return 'just now';
+  if(d<h) return Math.floor(d/m)+'m ago';
+  if(d<day) return Math.floor(d/h)+'h ago';
+  return Math.floor(d/day)+'d ago';
+}
+function roleClass(r) { return 'role-'+(r||'pending').toLowerCase(); }
+function statusBadge(s) { return `<span class="status s-${s||'pending'}">${s||'pending'}</span>`; }
+function countFlags(flags) { return flags ? Object.values(flags).filter(Boolean).length : 0; }
+async function sha256(obj) {
+  const buf = new TextEncoder().encode(JSON.stringify(obj));
+  const hb = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hb)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// ═══════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.auth-form').forEach(f=>f.classList.add('hidden'));
+  document.querySelector(`.auth-tab[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById(tab==='login'?'loginForm':'signupForm').classList.remove('hidden');
+}
+
+async function emailLogin(e) {
+  if(e) e.preventDefault();
+  const email=document.getElementById('loginEmail').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  document.getElementById('loginErr').textContent='';
+  document.getElementById('loginBtn').disabled=true;
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch(err) {
+    document.getElementById('loginErr').textContent = friendlyAuthError(err.code);
+    document.getElementById('loginBtn').disabled=false;
+  }
+}
+
+async function emailSignup(e) {
+  if(e) e.preventDefault();
+  const name=document.getElementById('signupName').value.trim();
+  const email=document.getElementById('signupEmail').value.trim();
+  const pass=document.getElementById('signupPass').value;
+  document.getElementById('signupErr').textContent='';
+  document.getElementById('signupBtn').disabled=true;
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email,pass);
+    await db.ref(`users/${cred.user.uid}`).set({
+      name, email, role:'pending', uid:cred.user.uid, created:Date.now()
+    });
+  } catch(err) {
+    document.getElementById('signupErr').textContent = friendlyAuthError(err.code);
+    document.getElementById('signupBtn').disabled=false;
+  }
+}
+
+async function googleLogin() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    const cred = await auth.signInWithPopup(provider);
+    const snap = await db.ref(`users/${cred.user.uid}`).once('value');
+    if(!snap.exists()) {
+      await db.ref(`users/${cred.user.uid}`).set({
+        name: cred.user.displayName||cred.user.email,
+        email: cred.user.email, role:'pending',
+        uid: cred.user.uid, created: Date.now()
+      });
+    }
+  } catch(err) {
+    toast('Google sign-in failed: '+err.message,'err');
+  }
+}
+
+function friendlyAuthError(code) {
+  return {
+    'auth/user-not-found':'Account not found.',
+    'auth/wrong-password':'Incorrect password.',
+    'auth/email-already-in-use':'Email already in use.',
+    'auth/invalid-email':'Invalid email address.',
+    'auth/weak-password':'Password too weak.',
+    'auth/too-many-requests':'Too many attempts. Try later.',
+    'auth/invalid-credential':'Invalid credentials.'
+  }[code] || 'Authentication error. Please try again.';
+}
+
+function logout() {
+  auth.signOut();
+  document.getElementById('pendingOverlay').classList.add('hidden');
+}
+
+// SAFETY FALLBACK — if Firebase auth never fires (blocked domain, offline SDK, file:// origin),
+// dismiss the loader after 6s and show the login screen so the app doesn't stay frozen.
+const _loaderTimeout = setTimeout(() => {
+  document.getElementById('pageLoader').classList.add('gone');
+  document.getElementById('authOverlay').classList.remove('hidden');
+}, 6000);
+
+// AUTH STATE OBSERVER
+auth.onAuthStateChanged(async user => {
+  clearTimeout(_loaderTimeout); // cancel fallback, Firebase responded
+  document.getElementById('pageLoader').classList.add('gone');
+  if(!user) {
+    currentUser=null; currentRole='pending';
+    document.getElementById('authOverlay').classList.remove('hidden');
+    document.getElementById('app').classList.remove('visible');
+    document.getElementById('pendingOverlay').classList.add('hidden');
+    return;
+  }
+  currentUser=user;
+
+  // Fetch role
+  const snap = await db.ref(`users/${user.uid}/role`).once('value');
+  currentRole = snap.val() || 'pending';
+
+  if(currentRole==='pending') {
+    document.getElementById('pendingOverlay').classList.remove('hidden');
+    document.getElementById('authOverlay').classList.add('hidden');
+    document.getElementById('app').classList.remove('visible');
+    return;
+  }
+
+  // Show app
+  document.getElementById('authOverlay').classList.add('hidden');
+  document.getElementById('pendingOverlay').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+
+  // Update topbar
+  document.getElementById('topbarEmail').textContent = user.displayName || user.email.split('@')[0];
+  document.getElementById('topbarRole').textContent = currentRole.toUpperCase();
+  document.getElementById('topbarRole').className = `user-role-badge ${roleClass(currentRole)}`;
+  document.getElementById('myEmail').textContent = user.email;
+  document.getElementById('myRole').textContent = 'Role: '+currentRole;
+
+  // Show role management for admin/president
+  if(['admin','president'].includes(currentRole)) {
+    document.getElementById('roleSection').style.display='block';
+    document.getElementById('adminNavItem').style.display='flex';
+    loadRoleTable();
+    loadAdminPanel();
+  }
+
+  // Show write buttons based on role
+  const canWrite = ['treasurer','auditor','president','admin'];
+  const canAnnounce = [...canWrite, 'pio'];
+  if(canWrite.includes(currentRole)) {
+    document.getElementById('btnNewAudit').style.display='inline-flex';
+    document.getElementById('btnUploadDoc').style.display='inline-flex';
+    document.getElementById('btnNewEvent').style.display='inline-flex';
+    document.getElementById('btnNewProj').style.display='inline-flex';
+  }
+  // PIO can post announcements
+  if(canAnnounce.includes(currentRole)) {
+    document.getElementById('btnNewAnn').style.display='inline-flex';
+  }
+
+  // Load all modules
+  loadDashboard();
+  loadAudits();
+  loadAnnouncements();
+  loadProjects();
+  loadEvents();
+  loadDocuments();
+});
+
+// ═══════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════
+const MODULES = ['dashboard','audits','announcements','projects','events','documents','settings','admin'];
+
+document.querySelectorAll('.nav-item[data-module]').forEach(item => {
+  item.addEventListener('click', () => {
+    const mod = item.dataset.module;
+    switchModule(mod);
+  });
+});
+
+function switchModule(mod) {
+  MODULES.forEach(m => {
+    document.getElementById(`mod-${m}`).classList.toggle('active', m===mod);
+  });
+  document.querySelectorAll('.nav-item[data-module]').forEach(i => {
+    i.classList.toggle('active', i.dataset.module===mod);
+  });
+  document.getElementById('breadcrumb').textContent = '/ '+mod.charAt(0).toUpperCase()+mod.slice(1);
+  window.location.hash = mod;
+}
+
+// Hash routing on load
+window.addEventListener('hashchange', () => {
+  const mod = window.location.hash.replace('#','');
+  if(MODULES.includes(mod)) switchModule(mod);
+});
+
+// ═══════════════════════════════════════
+//  SIDEBAR + THEME
+// ═══════════════════════════════════════
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('collapsed');
+  sb.classList.toggle('open');
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.dataset.theme==='dark';
+  html.dataset.theme = isDark ? 'light' : 'dark';
+  document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
+  document.getElementById('darkModeToggle').checked = !isDark;
+}
+
+function applyTheme() {
+  const checked = document.getElementById('darkModeToggle').checked;
+  document.documentElement.dataset.theme = checked ? 'dark' : 'light';
+  document.getElementById('themeBtn').textContent = checked ? '🌙' : '☀️';
+}
+
+// ═══════════════════════════════════════
+//  MODALS
+// ═══════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+// ═══════════════════════════════════════
+//  CLOUDINARY UPLOAD
+// ═══════════════════════════════════════
+async function uploadToCloudinary(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('upload_preset', CL_PRESET);
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${CL_CLOUD}/auto/upload`, {method:'POST',body:fd});
+  const data = await res.json();
+  if(data.error) throw new Error(data.error.message);
+  return { url: data.secure_url, name: file.name, type: file.type };
+}
+
+// ═══════════════════════════════════════
+//  AUDIT SYSTEM
+// ═══════════════════════════════════════
+function loadDashboard() {
+  db.ref('audits').on('value', snap => {
+    let total=0, pending=0, flagged=0, verified=0;
+    const activities = [];
+    snap.forEach(c => {
+      const a = c.val();
+      total++;
+      if(a.status==='pending') pending++;
+      else if(a.status==='verified') verified++;
+      if(countFlags(a.flags)>0) flagged++;
+      activities.push({...a, key:c.key});
+    });
+    document.getElementById('d-total').textContent=total;
+    document.getElementById('d-pending').textContent=pending;
+    document.getElementById('d-flagged').textContent=flagged;
+    document.getElementById('d-verified').textContent=verified;
+
+    const feed = document.getElementById('activityFeed');
+    if(!activities.length) { feed.innerHTML='<div class="feed-item"><div class="feed-dot"></div><div class="feed-msg">No activity yet</div><div class="feed-time">—</div></div>'; return; }
+    feed.innerHTML = activities.slice(-8).reverse().map(a => {
+      const dotClass = a.status==='verified'?'' : a.status==='flagged'?'red':'amber';
+      return `<div class="feed-item">
+        <div class="feed-dot ${dotClass}"></div>
+        <div class="feed-msg"><strong>${a.title||'Audit'}</strong> · ${statusBadge(a.status)}</div>
+        <div class="feed-time">${fmtRelative(a.timestamp||Date.now())}</div>
+      </div>`;
+    }).join('');
+  });
+}
+
+function loadAudits() {
+  db.ref('audits').on('value', snap => {
+    allAudits = [];
+    snap.forEach(c => allAudits.push({key:c.key,...c.val()}));
+    renderAuditTable(allAudits);
+  });
+}
+
+function renderAuditTable(data) {
+  const tbody = document.getElementById('auditTableBody');
+  if(!data.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:2rem;">No audit records found</td></tr>';
+    return;
+  }
+  const canFlag = ['auditor','president','admin'].includes(currentRole);
+  const canLock = ['president','admin'].includes(currentRole);
+  tbody.innerHTML = [...data].reverse().map(a => {
+    const fc = countFlags(a.flags);
+    return `<tr>
+      <td class="bold">${a.title||'—'}</td>
+      <td>${a.category||'—'}</td>
+      <td style="color:var(--cyan)">${fmtPeso(a.amount)}</td>
+      <td>${statusBadge(a.status)}</td>
+      <td style="color:${fc>0?'var(--red)':'var(--text-dim)'}">
+        ${fc>0?`⚑ ${fc} flag${fc>1?'s':''}`:'—'}
+      </td>
+      <td>${fmtDate(a.timestamp)}</td>
+      <td style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+        ${canFlag ? `<button class="btn btn-am" style="padding:0.3rem 0.6rem;font-size:0.6rem;" onclick="openReviewModal('${a.key}')">Review</button>` : ''}
+        ${canLock && a.status!=='locked' ? `<button class="btn btn-gr" style="padding:0.3rem 0.6rem;font-size:0.6rem;" onclick="lockAudit('${a.key}')">Lock</button>` : ''}
+        ${a.status==='locked'?'<span style="font-size:0.6rem;color:var(--green);">🔒 Locked</span>':''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterAudits() {
+  const q = document.getElementById('auditSearch').value.toLowerCase();
+  const f = document.getElementById('auditFilter').value;
+  const filtered = allAudits.filter(a =>
+    (!q || (a.title||'').toLowerCase().includes(q) || (a.category||'').toLowerCase().includes(q)) &&
+    (!f || a.status===f)
+  );
+  renderAuditTable(filtered);
+}
+
+function openAuditModal(key=null) {
+  editAuditKey=key;
+  pendingFiles=[];
+  document.getElementById('af-file-list').innerHTML='';
+  document.getElementById('auditModalTitle').textContent = key ? 'Edit Audit' : 'New Audit Record';
+  const canFlag = ['auditor','president','admin'].includes(currentRole);
+  document.getElementById('flagsSection').style.display = canFlag ? 'block' : 'none';
+  ['af-title','af-amount','af-description','af-comment'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('af-category').value='';
+  document.querySelectorAll('.flag-item').forEach(el=>{el.classList.remove('checked');el.querySelector('.flag-cb').checked=false;});
+
+  if(key) {
+    const a = allAudits.find(x=>x.key===key);
+    if(a) {
+      document.getElementById('af-title').value=a.title||'';
+      document.getElementById('af-amount').value=a.amount||'';
+      document.getElementById('af-category').value=a.category||'';
+      document.getElementById('af-description').value=a.description||'';
+      if(a.flags) {
+        Object.entries(a.flags).forEach(([flag,val]) => {
+          if(val) {
+            const cb = document.querySelector(`.flag-cb[data-flag="${flag}"]`);
+            if(cb) { cb.checked=true; cb.closest('.flag-item').classList.add('checked'); }
+          }
+        });
+      }
+      if(a.files) pendingFiles=[...a.files];
+    }
+  }
+  openModal('auditModal');
+}
+
+function openReviewModal(key) { openAuditModal(key); }
+
+function toggleFlag(el, flag) {
+  el.classList.toggle('checked');
+  el.querySelector('.flag-cb').checked = el.classList.contains('checked');
+}
+
+async function handleFileSelect(e) {
+  const files = Array.from(e.target.files);
+  const list = document.getElementById('af-file-list');
+  for(const file of files) {
+    const chip = document.createElement('div');
+    chip.className='file-chip';
+    chip.innerHTML=`<span>📎 ${file.name}</span><span style="color:var(--amber)">Uploading…</span>`;
+    list.appendChild(chip);
+    try {
+      const result = await uploadToCloudinary(file);
+      pendingFiles.push(result.url);
+      chip.innerHTML=`<span>📎 ${file.name}</span><a href="${result.url}" target="_blank">View ↗</a>`;
+      toast('File uploaded: '+file.name);
+    } catch(err) {
+      chip.innerHTML=`<span>📎 ${file.name}</span><span style="color:var(--red)">Failed</span>`;
+      toast('Upload failed: '+err.message,'err');
+    }
+  }
+}
+
+async function handleAnnFile(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  document.getElementById('ann-file-preview').textContent='Uploading…';
+  try {
+    const result = await uploadToCloudinary(file);
+    annFileUrl = result.url;
+    document.getElementById('ann-file-preview').textContent='✓ '+file.name;
+  } catch { document.getElementById('ann-file-preview').textContent='Upload failed'; }
+}
+
+async function submitAudit() {
+  const title = document.getElementById('af-title').value.trim();
+  const amount = parseFloat(document.getElementById('af-amount').value);
+  const category = document.getElementById('af-category').value;
+  const description = document.getElementById('af-description').value.trim();
+  const comment = document.getElementById('af-comment') ? document.getElementById('af-comment').value.trim() : '';
+
+  if(!title||!amount||!category||!description) { toast('Please fill all required fields','warn'); return; }
+
+  const flags = {};
+  document.querySelectorAll('.flag-cb').forEach(cb => { flags[cb.dataset.flag]=cb.checked; });
+
+  const hasFlags = Object.values(flags).some(Boolean);
+  const status = editAuditKey
+    ? (hasFlags ? 'flagged' : document.querySelector(`.status.s-verified`) ? 'verified' : 'pending')
+    : 'pending';
+
+  const payload = {
+    title, amount, category, description,
+    files: pendingFiles,
+    created_by: currentUser.uid,
+    status: hasFlags ? 'flagged' : 'pending',
+    flags, comment,
+    timestamp: editAuditKey ? (allAudits.find(a=>a.key===editAuditKey)?.timestamp||Date.now()) : Date.now(),
+    last_modified: Date.now(),
+    modified_by: currentUser.uid
+  };
+
+  payload.hash = await sha256({title,amount,category,description,flags});
+
+  try {
+    if(editAuditKey) {
+      await db.ref(`audits/${editAuditKey}`).update(payload);
+      toast('Audit updated');
+    } else {
+      await db.ref('audits').push(payload);
+      toast('Audit submitted');
+    }
+    closeModal('auditModal');
+    editAuditKey=null;
+    pendingFiles=[];
+  } catch(err) { toast('Error: '+err.message,'err'); }
+}
+
+async function lockAudit(key) {
+  if(!['president','admin'].includes(currentRole)) { toast('Insufficient permissions','err'); return; }
+  await db.ref(`audits/${key}`).update({status:'locked', locked_by:currentUser.uid, locked_at:Date.now()});
+  toast('Audit locked');
+}
+
+// ═══════════════════════════════════════
+//  ANNOUNCEMENTS
+// ═══════════════════════════════════════
+let allAnn = [];
+function loadAnnouncements() {
+  db.ref('announcements').on('value', snap => {
+    allAnn=[];
+    snap.forEach(c => allAnn.push({key:c.key,...c.val()}));
+    renderAnnouncements(allAnn);
+  });
+}
+function renderAnnouncements(data) {
+  const feed=document.getElementById('annFeed');
+  if(!data.length){feed.innerHTML='<div style="padding:2rem;text-align:center;color:var(--text-dim);">No announcements yet</div>';return;}
+  feed.innerHTML=[...data].reverse().map(a=>{
+    const isPio = a.author_role==='pio';
+    const pioBadge = isPio ? '<span class="pio-badge">📡 PIO</span>' : '';
+    const priorityBadge = a.priority==='urgent'
+      ? '<span style="background:rgba(255,51,102,0.15);border:1px solid rgba(255,51,102,0.4);color:var(--red);font-size:0.5rem;letter-spacing:0.14em;padding:0.15rem 0.5rem;text-transform:uppercase;margin-left:0.4rem;">🔴 URGENT</span>'
+      : a.priority==='info'
+      ? '<span style="background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);color:#0ea5e9;font-size:0.5rem;letter-spacing:0.14em;padding:0.15rem 0.5rem;text-transform:uppercase;margin-left:0.4rem;">🔵 INFO</span>'
+      : '';
+    const dotColor = a.priority==='urgent' ? ' red' : isPio ? ' blue' : (a.public ? '' : ' amber');
+    return `
+    <div class="feed-item">
+      <div class="feed-dot${dotColor}"></div>
+      <div class="feed-msg">
+        <strong>${a.title||'—'}</strong>${pioBadge}${priorityBadge}<br>
+        <span style="font-size:0.65rem;">${a.content||''}</span>
+        ${a.file?`<br><a href="${a.file}" target="_blank" style="color:var(--cyan);font-size:0.62rem;">Attachment ↗</a>`:''}
+        <div style="font-size:0.58rem;color:var(--text-dim);margin-top:0.2rem;">— ${a.author||'—'}</div>
+      </div>
+      <div class="feed-time">
+        <div>${a.public?'<span style="color:var(--cyan);font-size:0.58rem;">PUBLIC</span>':'<span style="color:var(--text-dim);font-size:0.58rem;">INTERNAL</span>'}</div>
+        <div style="margin-top:0.3rem;">${fmtRelative(a.timestamp||Date.now())}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function filterAnnouncements(q) {
+  renderAnnouncements(allAnn.filter(a=>(a.title||'').toLowerCase().includes(q.toLowerCase())));
+}
+function openAnnModal() { annFileUrl=null; document.getElementById('ann-title').value=''; document.getElementById('ann-content').value=''; document.getElementById('ann-file-preview').textContent=''; openModal('annModal'); }
+async function submitAnnouncement() {
+  const title=document.getElementById('ann-title').value.trim();
+  const content=document.getElementById('ann-content').value.trim();
+  const isPublic=document.getElementById('ann-public').value==='true';
+  if(!title||!content){toast('Fill required fields','warn');return;}
+  await db.ref('announcements').push({
+    title,content,public:isPublic,
+    file:annFileUrl||null,
+    author:currentUser.displayName||currentUser.email,
+    author_role: currentRole,
+    created_by:currentUser.uid,
+    timestamp:Date.now()
+  });
+  toast('Announcement published');
+  closeModal('annModal');
+}
+
+// ═══════════════════════════════════════
+//  PROJECTS
+// ═══════════════════════════════════════
+function loadProjects() {
+  db.ref('projects').on('value', snap => {
+    const items=[]; snap.forEach(c=>items.push({key:c.key,...c.val()}));
+    const g=document.getElementById('projGrid');
+    if(!items.length){g.innerHTML='<div style="color:var(--text-dim);font-size:0.72rem;">No projects yet</div>';return;}
+    g.innerHTML=items.map(p=>`
+      <div class="proj-card">
+        <div class="proj-top">
+          <div class="proj-name">${p.name||'Project'}</div>
+          ${['president','admin'].includes(currentRole)?`<button class="btn btn-re" style="padding:0.25rem 0.6rem;font-size:0.58rem;" onclick="deleteProject('${p.key}')">×</button>`:''}
+        </div>
+        <div class="proj-desc">${p.description||''}</div>
+        <div class="prog-track"><div class="prog-fill" style="width:${p.progress||0}%"></div></div>
+        <div class="proj-foot">
+          <span>${p.milestone||'In Progress'}</span>
+          <span class="proj-pct">${p.progress||0}%</span>
+        </div>
+      </div>
+    `).join('');
+  });
+}
+function openProjModal(){document.getElementById('pj-name').value='';document.getElementById('pj-desc').value='';document.getElementById('pj-progress').value=0;document.getElementById('pj-milestone').value='';openModal('projModal');}
+async function submitProject(){
+  const name=document.getElementById('pj-name').value.trim();
+  if(!name){toast('Project name required','warn');return;}
+  await db.ref('projects').push({name,description:document.getElementById('pj-desc').value.trim(),progress:parseInt(document.getElementById('pj-progress').value)||0,milestone:document.getElementById('pj-milestone').value.trim(),created_by:currentUser.uid,created:Date.now()});
+  toast('Project created');closeModal('projModal');
+}
+async function deleteProject(key){if(!confirm('Delete this project?'))return;await db.ref(`projects/${key}`).remove();toast('Project deleted');}
+
+// ═══════════════════════════════════════
+//  EVENTS
+// ═══════════════════════════════════════
+function loadEvents() {
+  db.ref('events').on('value', snap => {
+    const items=[]; snap.forEach(c=>items.push({key:c.key,...c.val()}));
+    const tb=document.getElementById('eventTableBody');
+    if(!items.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:2rem;">No events</td></tr>';return;}
+    tb.innerHTML=[...items].sort((a,b)=>(a.date||0)-(b.date||0)).map(e=>`
+      <tr>
+        <td class="bold">${e.title||'—'}</td>
+        <td>${fmtDate(e.date)}</td>
+        <td>${e.type||'—'}</td>
+        <td>${e.rsvp?'<span style="color:var(--cyan);">Yes</span>':'No'}</td>
+        <td>${['president','admin'].includes(currentRole)?`<button class="btn btn-re" style="padding:0.25rem 0.6rem;font-size:0.6rem;" onclick="deleteEvent('${e.key}')">Delete</button>`:'—'}</td>
+      </tr>
+    `).join('');
+  });
+}
+function openEventModal(){['ev-title','ev-desc'].forEach(id=>document.getElementById(id).value='');document.getElementById('ev-date').value='';openModal('eventModal');}
+async function submitEvent(){
+  const title=document.getElementById('ev-title').value.trim();
+  const date=new Date(document.getElementById('ev-date').value).getTime();
+  if(!title||!date){toast('Fill required fields','warn');return;}
+  await db.ref('events').push({title,date,type:document.getElementById('ev-type').value,description:document.getElementById('ev-desc').value.trim(),rsvp:document.getElementById('ev-rsvp').value==='true',created_by:currentUser.uid,created:Date.now()});
+  toast('Event saved');closeModal('eventModal');
+}
+async function deleteEvent(key){if(!confirm('Delete event?'))return;await db.ref(`events/${key}`).remove();toast('Event deleted');}
+
+// ═══════════════════════════════════════
+//  DOCUMENTS
+// ═══════════════════════════════════════
+function loadDocuments(){
+  db.ref('documents').on('value', snap=>{
+    const items=[]; snap.forEach(c=>items.push({key:c.key,...c.val()}));
+    const dl=document.getElementById('docList');
+    if(!items.length){dl.innerHTML='<div style="padding:2rem;text-align:center;color:var(--text-dim);">No documents uploaded</div>';return;}
+    dl.innerHTML=items.map(d=>`
+      <div class="doc-card">
+        <div class="doc-icon">${d.type==='application/pdf'?'📄':'🗂️'}</div>
+        <div>
+          <div class="doc-name">${d.name||'Document'}</div>
+          <div class="doc-meta">${fmtDate(d.uploaded)} · ${d.uploaded_by_name||'Member'}</div>
+        </div>
+        <div class="doc-actions">
+          <a href="${d.url}" target="_blank" class="btn btn-cy" style="padding:0.3rem 0.7rem;font-size:0.62rem;text-decoration:none;">Download</a>
+          ${['admin','president'].includes(currentRole)?`<button class="btn btn-re" style="padding:0.3rem 0.6rem;font-size:0.6rem;" onclick="deleteDoc('${d.key}')">×</button>`:''}
+        </div>
+      </div>
+    `).join('');
+  });
+}
+function openDocModal(){openModal('auditModal');}
+
+async function openDocModal2(){
+  const input=document.createElement('input'); input.type='file'; input.accept='.pdf,.doc,.docx,.png,.jpg';
+  input.onchange=async(e)=>{
+    const file=e.target.files[0]; if(!file)return;
+    toast('Uploading document…');
+    try{
+      const result=await uploadToCloudinary(file);
+      await db.ref('documents').push({name:file.name,url:result.url,type:file.type,uploaded:Date.now(),uploaded_by:currentUser.uid,uploaded_by_name:currentUser.displayName||currentUser.email});
+      toast('Document uploaded');
+    }catch(err){toast('Upload failed: '+err.message,'err');}
+  };
+  input.click();
+}
+document.getElementById('btnUploadDoc').onclick=openDocModal2;
+async function deleteDoc(key){if(!confirm('Delete document?'))return;await db.ref(`documents/${key}`).remove();toast('Document deleted');}
+
+// ═══════════════════════════════════════
+//  ROLE MANAGEMENT
+// ═══════════════════════════════════════
+function loadRoleTable(){
+  db.ref('users').on('value', snap=>{
+    allUsers=[];
+    snap.forEach(c=>allUsers.push({key:c.key,...c.val()}));
+    renderRoleTable(allUsers);
+  });
+}
+function renderRoleTable(data){
+  const tb=document.getElementById('roleTableBody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:2rem;">No members</td></tr>';return;}
+  const roles=['pending','member','pio','treasurer','auditor','president','admin'];
+  tb.innerHTML=data.map(u=>`
+    <tr>
+      <td>
+        <div class="bold">${u.name||'—'}</div>
+        <div style="font-size:0.62rem;color:var(--text-dim);">${u.email||''}</div>
+      </td>
+      <td><span class="status ${roleClass(u.role)}">${u.role||'pending'}</span></td>
+      <td>
+        <select class="rs-select" id="role-sel-${u.key}" style="font-size:0.65rem;padding:0.4rem 0.6rem;">
+          ${roles.map(r=>`<option value="${r}"${r===u.role?' selected':''}>${r}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <button class="btn btn-cy" style="padding:0.3rem 0.8rem;font-size:0.6rem;" onclick="applyRole('${u.key}')">Apply</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function filterRoleTable(q){renderRoleTable(allUsers.filter(u=>(u.name||'').toLowerCase().includes(q.toLowerCase())||(u.email||'').toLowerCase().includes(q.toLowerCase())));}
+async function applyRole(uid){
+  const newRole=document.getElementById(`role-sel-${uid}`).value;
+  await db.ref(`users/${uid}/role`).set(newRole);
+  toast('Role updated');
+}
+
+
+// ═══════════════════════════════════════
+//  ADMIN PANEL
+// ═══════════════════════════════════════
+let officerPhotoUrl  = null;
+let officerColorHex  = '#00f5d4';
+let officerColorName = 'cyan';
+let editOfficerKey   = null;
+
+function loadAdminPanel() {
+  // Member stats
+  db.ref('users').on('value', snap => {
+    let total=0, pending=0;
+    const roleCount = {};
+    snap.forEach(c => {
+      total++;
+      const u = c.val();
+      const r = u.role||'pending';
+      if(r==='pending') pending++;
+      roleCount[r] = (roleCount[r]||0)+1;
+    });
+    const el = id => document.getElementById(id);
+    if(el('adm-total')) el('adm-total').textContent = total;
+    if(el('adm-pending')) el('adm-pending').textContent = pending;
+    if(el('admPendingBadge')) el('admPendingBadge').textContent = pending;
+
+    // Role breakdown
+    const rb = el('adminRoleBreakdown');
+    if(rb) {
+      const colors = {admin:'var(--purple)',president:'var(--cyan)',pio:'#0ea5e9',treasurer:'var(--green)',auditor:'var(--amber)',member:'var(--text-mid)',pending:'var(--red)'};
+      rb.innerHTML = Object.entries(roleCount).map(([r,c]) =>
+        `<div class="role-pill">
+          <span class="role-pill-count" style="color:${colors[r]||'var(--text)'}">${c}</span>
+          <span style="font-size:0.62rem;color:var(--text-mid);text-transform:capitalize;">${r}</span>
+        </div>`
+      ).join('');
+    }
+
+    // Pending approval list
+    const pl = el('adminPendingList');
+    if(pl) {
+      const pendingUsers = [];
+      snap.forEach(c => { const u=c.val(); if((u.role||'pending')==='pending') pendingUsers.push({key:c.key,...u}); });
+      if(!pendingUsers.length) {
+        pl.innerHTML='<div style="color:var(--text-dim);font-size:0.7rem;padding:1rem 0;">No pending approvals.</div>';
+      } else {
+        const roles = ['member','pio','treasurer','auditor','president','admin'];
+        pl.innerHTML = pendingUsers.map(u => `
+          <div class="pending-item">
+            <div class="pending-item-info">
+              <div class="pending-item-name">${u.name||'—'}</div>
+              <div class="pending-item-email">${u.email||''}</div>
+            </div>
+            <div class="pending-item-actions">
+              <select class="rs-select" id="quick-role-${u.key}" style="font-size:0.62rem;padding:0.35rem 0.5rem;">
+                ${roles.map(r=>`<option value="${r}">${r}</option>`).join('')}
+              </select>
+              <button class="btn btn-fill" style="padding:0.3rem 0.8rem;font-size:0.6rem;" onclick="quickApprove('${u.key}')">Approve</button>
+              <button class="btn btn-re" style="padding:0.3rem 0.6rem;font-size:0.6rem;" onclick="quickReject('${u.key}')">Reject</button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+  });
+
+  // Audit flags
+  db.ref('audits').once('value', snap => {
+    let flags=0;
+    snap.forEach(c=>{ if(countFlags(c.val().flags)>0) flags++; });
+    const el = document.getElementById('adm-flags');
+    if(el) el.textContent = flags;
+  });
+
+  // Announcements count
+  db.ref('announcements').on('value', snap => {
+    const el = document.getElementById('adm-anns');
+    if(el) el.textContent = snap.numChildren();
+  });
+
+  // Officers
+  loadOfficerTable();
+  checkSystemHealth();
+  updateCacheStats();
+}
+
+async function quickApprove(uid) {
+  const sel = document.getElementById(`quick-role-${uid}`);
+  const role = sel ? sel.value : 'member';
+  await db.ref(`users/${uid}/role`).set(role);
+  toast(`User approved as ${role}`);
+}
+async function quickReject(uid) {
+  if(!confirm('Remove this pending account?')) return;
+  await db.ref(`users/${uid}`).remove();
+  toast('Account removed');
+}
+
+// ── OFFICER TABLE ─────────────────────────────────────────────────────────────
+function loadOfficerTable() {
+  db.ref('officers').on('value', snap => {
+    const items = [];
+    snap.forEach(c => items.push({key:c.key,...c.val()}));
+    items.sort((a,b) => (a.order||0)-(b.order||0));
+
+    const el = document.getElementById('adm-officers');
+    if(el) el.textContent = items.length;
+
+    const tb = document.getElementById('officerTableBody');
+    if(!tb) return;
+    if(!items.length) {
+      tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:2rem;">No officers yet. Add one!</td></tr>';
+      return;
+    }
+    const colorMap = {cyan:'#00f5d4',amber:'#ffb800',green:'#39d98a',purple:'#9b5de5',red:'#ff3366',blue:'#0ea5e9'};
+    tb.innerHTML = items.map(o => {
+      const c = colorMap[o.color]||'#00f5d4';
+      const photoHtml = o.photo
+        ? `<img src="${o.photo}" class="officer-photo-thumb" alt="${o.name}">`
+        : `<div class="officer-photo-placeholder" style="border-color:${c};color:${c};">${(o.name||'?').charAt(0).toUpperCase()}</div>`;
+      return `
+        <tr>
+          <td>${photoHtml}</td>
+          <td class="bold">${o.name||'—'}</td>
+          <td><span style="color:${c};font-size:0.62rem;">${o.role||'—'}</span></td>
+          <td><span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:${c};vertical-align:middle;"></span></td>
+          <td style="color:var(--text-dim);font-size:0.65rem;">${o.order||0}</td>
+          <td>
+            <div style="display:flex;gap:0.4rem;">
+              <button class="btn btn-cy" style="padding:0.25rem 0.6rem;font-size:0.58rem;" onclick="editOfficer('${o.key}')">Edit</button>
+              <button class="btn btn-re" style="padding:0.25rem 0.5rem;font-size:0.58rem;" onclick="deleteOfficer('${o.key}')">×</button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+  });
+}
+
+function openOfficerModal(key) {
+  editOfficerKey = key || null;
+  officerPhotoUrl = null;
+  officerColorHex = '#00f5d4';
+  officerColorName = 'cyan';
+  document.getElementById('officerModalTitle').textContent = key ? 'Edit Officer' : 'Add Officer';
+  document.getElementById('off-name').value = '';
+  document.getElementById('off-desc').value = '';
+  document.getElementById('off-order').value = 0;
+  document.getElementById('off-role').value = 'Club President';
+  document.getElementById('off-custom-group').style.display = 'none';
+  document.getElementById('officer-photo-preview').style.display = 'none';
+  document.getElementById('officer-photo-placeholder').style.display = 'flex';
+  document.getElementById('officer-photo-url-display').textContent = '';
+  document.querySelectorAll('.color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.color === 'cyan');
+  });
+  openModal('officerModal');
+}
+
+async function editOfficer(key) {
+  const snap = await db.ref(`officers/${key}`).once('value');
+  if(!snap.exists()) return;
+  const o = snap.val();
+  editOfficerKey = key;
+  officerPhotoUrl = o.photo || null;
+  officerColorHex = {cyan:'#00f5d4',amber:'#ffb800',green:'#39d98a',purple:'#9b5de5',red:'#ff3366',blue:'#0ea5e9'}[o.color] || '#00f5d4';
+  officerColorName = o.color || 'cyan';
+  document.getElementById('officerModalTitle').textContent = 'Edit Officer';
+  document.getElementById('off-name').value = o.name||'';
+  document.getElementById('off-desc').value = o.desc||'';
+  document.getElementById('off-order').value = o.order||0;
+  // Set role dropdown
+  const knownRoles = ['Club President','Vice President','Secretary','Treasurer','Auditor','PIO / PR','Technical Lead','Member'];
+  if(knownRoles.includes(o.role)) {
+    document.getElementById('off-role').value = o.role;
+    document.getElementById('off-custom-group').style.display = 'none';
+  } else {
+    document.getElementById('off-role').value = 'Custom';
+    document.getElementById('off-custom-role').value = o.role||'';
+    document.getElementById('off-custom-group').style.display = 'block';
+  }
+  // Photo preview
+  if(o.photo) {
+    document.getElementById('officer-photo-preview').src = o.photo;
+    document.getElementById('officer-photo-preview').style.display = 'block';
+    document.getElementById('officer-photo-placeholder').style.display = 'none';
+    document.getElementById('officer-photo-url-display').textContent = 'Photo loaded';
+  }
+  // Color swatches
+  document.querySelectorAll('.color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.color === o.color);
+  });
+  openModal('officerModal');
+}
+
+document.addEventListener('change', e => {
+  if(e.target.id === 'off-role') {
+    document.getElementById('off-custom-group').style.display = e.target.value === 'Custom' ? 'block' : 'none';
+  }
+});
+
+function selectOfficerColor(el, name, hex) {
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  officerColorName = name;
+  officerColorHex = hex;
+}
+
+async function handleOfficerPhotoUpload(e) {
+  const file = e.target.files[0]; if(!file) return;
+  toast('Uploading photo to Cloudinary…');
+  try {
+    const result = await uploadToCloudinary(file);
+    officerPhotoUrl = result.url;
+    document.getElementById('officer-photo-preview').src = officerPhotoUrl;
+    document.getElementById('officer-photo-preview').style.display = 'block';
+    document.getElementById('officer-photo-placeholder').style.display = 'none';
+    document.getElementById('officer-photo-url-display').textContent = '✓ Photo uploaded';
+    toast('Photo uploaded');
+  } catch(err) {
+    toast('Photo upload failed: '+err.message,'err');
+  }
+}
+
+async function submitOfficer() {
+  const name = document.getElementById('off-name').value.trim();
+  if(!name) { toast('Name is required','warn'); return; }
+  const roleVal = document.getElementById('off-role').value;
+  const finalRole = roleVal === 'Custom' ? (document.getElementById('off-custom-role').value.trim()||'Member') : roleVal;
+  const data = {
+    name,
+    role: finalRole,
+    desc: document.getElementById('off-desc').value.trim(),
+    order: parseInt(document.getElementById('off-order').value)||0,
+    color: officerColorName,
+    photo: officerPhotoUrl || null,
+    updated: Date.now()
+  };
+  if(editOfficerKey) {
+    await db.ref(`officers/${editOfficerKey}`).update(data);
+    toast('Officer updated');
+  } else {
+    await db.ref('officers').push({...data, created: Date.now()});
+    toast('Officer added');
+  }
+  closeModal('officerModal');
+}
+
+async function deleteOfficer(key) {
+  if(!confirm('Remove this officer?')) return;
+  await db.ref(`officers/${key}`).remove();
+  toast('Officer removed');
+}
+
+// ── SYSTEM HEALTH ─────────────────────────────────────────────────────────────
+function setSysStatus(id, valId, status, text) {
+  const dot = document.getElementById(id);
+  const val = document.getElementById(valId);
+  if(!dot||!val) return;
+  dot.className = `sys-dot ${status}`;
+  val.textContent = text;
+}
+async function checkSystemHealth() {
+  // Network
+  setSysStatus('sh-online','sh-online-val', navigator.onLine?'ok':'err', navigator.onLine?'Connected':'Offline');
+
+  // Service Worker
+  if('serviceWorker' in navigator) {
+    const reg = await navigator.serviceWorker.getRegistration('/sw.js').catch(()=>null);
+    if(reg && reg.active) {
+      setSysStatus('sh-sw','sh-sw-val','ok',`Active (${reg.active.scriptURL.split('/').pop()})`);
+    } else {
+      setSysStatus('sh-sw','sh-sw-val','warn','Not active');
+    }
+  } else {
+    setSysStatus('sh-sw','sh-sw-val','err','Not supported');
+  }
+
+  // Push notifications
+  if('Notification' in window) {
+    const p = Notification.permission;
+    setSysStatus('sh-push','sh-push-val', p==='granted'?'ok':p==='denied'?'err':'warn',
+      p==='granted'?'Granted':p==='denied'?'Blocked':'Not granted');
+  } else {
+    setSysStatus('sh-push','sh-push-val','err','Not supported');
+  }
+
+  // Firebase: try a quick read
+  try {
+    await db.ref('.info/connected').once('value');
+    setSysStatus('sh-firebase','sh-firebase-val','ok','Connected');
+  } catch {
+    setSysStatus('sh-firebase','sh-firebase-val','err','Disconnected');
+  }
+
+  // Periodic sync
+  if('periodicSync' in (await navigator.serviceWorker.getRegistration('/sw.js').catch(()=>({})||{})||{})) {
+    setSysStatus('sh-periodic','sh-periodic-val','ok','Supported');
+  } else {
+    setSysStatus('sh-periodic','sh-periodic-val','warn','Not supported / needs HTTPS');
+  }
+
+  // Cloudinary configured
+  setSysStatus('sh-cloudinary','sh-cloudinary-val','ok',`Cloud: ${CL_CLOUD}`);
+}
+
+async function updateCacheStats() {
+  const el = document.getElementById('adm-cache');
+  if(!el) return;
+  if(!('caches' in window)) { el.textContent='N/A'; return; }
+  try {
+    const keys = await caches.keys();
+    let total = 0;
+    for(const k of keys) {
+      const c = await caches.open(k);
+      const ks = await c.keys();
+      total += ks.length;
+    }
+    el.textContent = total;
+  } catch { el.textContent = '?'; }
+}
+
+// ── PWA CONTROLS ─────────────────────────────────────────────────────────────
+function pwaLog(msg) {
+  const el = document.getElementById('pwaControlsLog');
+  if(!el) return;
+  const line = document.createElement('div');
+  line.style.cssText = 'padding:0.25rem 0; border-bottom:1px solid var(--border);';
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  el.prepend(line);
+}
+
+async function admPurgeCache() {
+  if(!confirm('Purge all Service Worker caches?')) return;
+  if(!('serviceWorker' in navigator)) { pwaLog('⚠ SW not supported'); return; }
+  const reg = await navigator.serviceWorker.getRegistration('/sw.js').catch(()=>null);
+  if(!reg || !reg.active) { pwaLog('⚠ No active SW found'); return; }
+  reg.active.postMessage({ type:'PURGE_CACHE' });
+  const handler = e => {
+    if(e.data.type==='CACHE_PURGED') {
+      pwaLog('✓ All caches purged');
+      updateCacheStats();
+      navigator.serviceWorker.removeEventListener('message', handler);
+    }
+  };
+  navigator.serviceWorker.addEventListener('message', handler);
+}
+
+async function admCheckQueue() {
+  if(!('serviceWorker' in navigator)) { pwaLog('⚠ SW not supported'); return; }
+  const reg = await navigator.serviceWorker.getRegistration('/sw.js').catch(()=>null);
+  if(!reg || !reg.active) { pwaLog('⚠ No active SW found'); return; }
+  reg.active.postMessage({ type:'GET_QUEUE_COUNT' });
+  const handler = e => {
+    if(e.data.type==='QUEUE_COUNT') {
+      pwaLog(`📋 Offline queue: ${e.data.count} pending action(s)`);
+      navigator.serviceWorker.removeEventListener('message', handler);
+    }
+  };
+  navigator.serviceWorker.addEventListener('message', handler);
+}
+
+async function admRegisterPeriodic() {
+  if(!('serviceWorker' in navigator)) { pwaLog('⚠ SW not supported'); return; }
+  const reg = await navigator.serviceWorker.getRegistration('/sw.js').catch(()=>null);
+  if(!reg || !reg.active) { pwaLog('⚠ No active SW found'); return; }
+  reg.active.postMessage({ type:'REGISTER_PERIODIC' });
+  const handler = e => {
+    if(e.data.type==='PERIODIC_REGISTERED') {
+      pwaLog('✓ Periodic background sync registered (15 min interval)');
+    } else if(e.data.type==='PERIODIC_UNSUPPORTED') {
+      pwaLog('⚠ Periodic sync not supported on this browser/context');
+    }
+    navigator.serviceWorker.removeEventListener('message', handler);
+  };
+  navigator.serviceWorker.addEventListener('message', handler);
+}
+
+async function admSendTestPush() {
+  if(!('Notification' in window)) { pwaLog('⚠ Notifications not supported'); return; }
+  if(Notification.permission !== 'granted') {
+    const p = await Notification.requestPermission();
+    if(p !== 'granted') { pwaLog('⚠ Notification permission denied'); return; }
+  }
+  const reg = await navigator.serviceWorker.getRegistration('/sw.js').catch(()=>null);
+  if(reg) {
+    reg.showNotification('RoboSys Test Push', {
+      body: 'Push notifications are working correctly!',
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      vibrate: [200, 100, 200],
+      data: { url: '/app.html' },
+      actions: [
+        { action:'open', title:'Open App' },
+        { action:'dismiss', title:'Dismiss' }
+      ]
+    });
+    pwaLog('✓ Test push notification sent');
+  }
+}
+
+// ── ADMIN QUICK ANNOUNCEMENT (PIO / Admin) ─────────────────────────────────
+async function admPostAnnouncement() {
+  const title   = document.getElementById('adm-ann-title').value.trim();
+  const content = document.getElementById('adm-ann-body').value.trim();
+  const isPublic = document.getElementById('adm-ann-vis').value === 'true';
+  const priority = document.getElementById('adm-ann-priority').value;
+  if(!title || !content) { toast('Fill title and body','warn'); return; }
+  await db.ref('announcements').push({
+    title, content,
+    public: isPublic,
+    priority,
+    file: null,
+    author: currentUser.displayName || currentUser.email,
+    author_role: currentRole,
+    created_by: currentUser.uid,
+    timestamp: Date.now()
+  });
+  document.getElementById('adm-ann-title').value = '';
+  document.getElementById('adm-ann-body').value  = '';
+  toast('Announcement published');
+}
+
+// ── PWA INSTALL PROMPT ────────────────────────────────────────────────────────
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Show install button if it exists
+  const btn = document.getElementById('pwaInstallBtn');
+  if(btn) btn.style.display = 'inline-flex';
+});
+async function triggerPWAInstall() {
+  if(!deferredInstallPrompt) { toast('App already installed or not installable','warn'); return; }
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  toast(outcome === 'accepted' ? '✓ App installed!' : 'Install dismissed', outcome==='accepted'?'ok':'warn');
+  deferredInstallPrompt = null;
+}
+window.addEventListener('appinstalled', () => toast('RoboSys installed as PWA!'));
+
+// SW message relay to clients
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', e => {
+    const { type } = e.data || {};
+    if(type === 'SYNC_SUCCESS') toast('Offline action synced ✓');
+    if(type === 'SYNC_FAILED')  toast('Offline action failed after retries','err');
+    if(type === 'PERIODIC_SYNC') {
+      // Refresh dynamic content silently
+      if(typeof loadAnnouncements === 'function') loadAnnouncements();
+    }
+    if(type === 'NAVIGATE') {
+      const mod = e.data.url.replace(/.*#/,'');
+      if(MODULES.includes(mod)) switchModule(mod);
+    }
+  });
+}
+
+// Online / offline indicator
+window.addEventListener('online', () => toast('Back online — syncing…'));
+window.addEventListener('offline', () => toast('You are offline. Changes will sync when reconnected.','warn'));
+
+// ═══════════════════════════════════════
+//  ADMIN PANEL — MAIN LOAD
+// ═══════════════════════════════════════
+// (variables declared above in first admin block)
+function loadAdminPanel() {
+  // Stat counters
+  db.ref('users').on('value', snap => {
+    let total=0, pending=0;
+    const breakdown = {};
+    const pendingUsers = [];
+    snap.forEach(c => {
+      const u = c.val();
+      total++;
+      const r = u.role || 'pending';
+      breakdown[r] = (breakdown[r]||0) + 1;
+      if(r === 'pending') { pending++; pendingUsers.push({key:c.key,...u}); }
+    });
+    const adTotal = document.getElementById('adm-total');
+    const adPend  = document.getElementById('adm-pending');
+    if(adTotal) adTotal.textContent = total;
+    if(adPend)  adPend.textContent  = pending;
+
+    // Role breakdown
+    const rb = document.getElementById('adminRoleBreakdown');
+    if(rb) {
+      const colorMap = {admin:'var(--purple)',president:'var(--cyan)',auditor:'var(--amber)',treasurer:'var(--green)',pio:'#0ea5e9',member:'var(--text-mid)',pending:'var(--red)'};
+      rb.innerHTML = Object.entries(breakdown).map(([r,c]) =>
+        `<div class="role-pill">
+          <div class="role-pill-count" style="color:${colorMap[r]||'var(--text)'}">${c}</div>
+          <div style="font-size:0.62rem;color:var(--text-mid);text-transform:capitalize;">${r}</div>
+        </div>`
+      ).join('');
+    }
+
+    // Pending approvals
+    const pl = document.getElementById('adminPendingList');
+    const pb = document.getElementById('admPendingBadge');
+    if(pb) pb.textContent = pending;
+    if(pl) {
+      if(!pendingUsers.length) {
+        pl.innerHTML = '<div style="color:var(--text-dim);font-size:0.7rem;padding:1rem 0;">No pending approvals. 🎉</div>';
+      } else {
+        const roles = ['member','pio','treasurer','auditor','president'];
+        pl.innerHTML = pendingUsers.map(u => `
+          <div class="pending-item">
+            <div class="pending-item-info">
+              <div class="pending-item-name">${u.name||'—'}</div>
+              <div class="pending-item-email">${u.email||''} &nbsp;·&nbsp; Registered ${fmtRelative(u.created||Date.now())}</div>
+            </div>
+            <div class="pending-item-actions">
+              <select class="rs-select" id="quick-role-${u.key}" style="font-size:0.62rem;padding:0.35rem 0.5rem;">
+                ${roles.map(r=>`<option value="${r}">${r}</option>`).join('')}
+              </select>
+              <button class="btn btn-fill" style="padding:0.35rem 0.75rem;font-size:0.6rem;" onclick="quickApprove('${u.key}')">Approve</button>
+              <button class="btn btn-re" style="padding:0.35rem 0.6rem;font-size:0.6rem;" onclick="quickDeny('${u.key}')">Deny</button>
+            </div>
+          </div>`
+        ).join('');
+      }
+    }
+  });
+
+  // Announcement count
+  db.ref('announcements').on('value', snap => {
+    const el = document.getElementById('adm-anns');
+    if(el) el.textContent = snap.numChildren();
+  });
+
+  // Flagged audits
+  db.ref('audits').on('value', snap => {
+    let flags = 0;
+    snap.forEach(c => { if(countFlags(c.val().flags) > 0) flags++; });
+    const el = document.getElementById('adm-flags');
+    if(el) el.textContent = flags;
+  });
+
+  // Officer count
+  db.ref('officers').on('value', snap => {
+    const el = document.getElementById('adm-officers');
+    if(el) el.textContent = snap.numChildren();
+    renderOfficerTable(snap);
+  });
+
+  // SW cache count
+  checkSWCacheCount();
+
+  // System health
+  checkSystemHealth();
+}
+
+async function checkSWCacheCount() {
+  try {
+    const keys = await caches.keys();
+    let total = 0;
+    for(const k of keys) {
+      const c = await caches.open(k);
+      const items = await c.keys();
+      total += items.length;
+    }
+    const el = document.getElementById('adm-cache');
+    if(el) el.textContent = total;
+  } catch { /* non-secure context */ }
+}
+
+async function checkSystemHealth() {
+  // Firebase
+  try {
+    await db.ref('.info/connected').once('value');
+    setHealth('firebase','ok','Connected');
+  } catch { setHealth('firebase','err','Disconnected'); }
+
+  // SW
+  if('serviceWorker' in navigator) {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if(reg && reg.active) {
+      setHealth('sw','ok',`v${reg.active.scriptURL.includes('v2')?'2.0':'1.0'} Active`);
+    } else {
+      setHealth('sw','warn','Registered, not active');
+    }
+  } else {
+    setHealth('sw','err','Not supported');
+  }
+
+  // Push
+  if('PushManager' in window) {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg ? await reg.pushManager.getSubscription() : null;
+    setHealth('push', sub ? 'ok' : 'warn', sub ? 'Subscribed' : 'Not subscribed');
+  } else {
+    setHealth('push','err','Not supported');
+  }
+
+  // Network
+  setHealth('online', navigator.onLine ? 'ok' : 'err', navigator.onLine ? 'Online' : 'Offline');
+
+  // Periodic Sync
+  if('periodicSync' in (await navigator.serviceWorker.getRegistration()||{})) {
+    setHealth('periodic','ok','Supported');
+  } else {
+    setHealth('periodic','warn','Not supported / needs install');
+  }
+
+  // Cloudinary
+  setHealth('cloudinary','ok',`Cloud: ${CL_CLOUD}`);
+}
+
+function setHealth(id, status, val) {
+  const dot = document.getElementById(`sh-${id}`);
+  const lbl = document.getElementById(`sh-${id}-val`);
+  if(dot) { dot.className = `sys-dot ${status}`; }
+  if(lbl) lbl.textContent = val;
+}
+
+async function quickApprove(uid) {
+  const role = document.getElementById(`quick-role-${uid}`)?.value || 'member';
+  await db.ref(`users/${uid}/role`).set(role);
+  toast(`Approved as ${role}`);
+}
+
+async function quickDeny(uid) {
+  if(!confirm('Delete this pending user?')) return;
+  await db.ref(`users/${uid}`).remove();
+  toast('User removed','warn');
+}
+
+// ─── Officer Management ──────────────────────────────────────────────────────
+function renderOfficerTable(snap) {
+  const tb = document.getElementById('officerTableBody');
+  if(!tb) return;
+  const items = [];
+  snap.forEach(c => items.push({key:c.key,...c.val()}));
+  items.sort((a,b) => (a.order||0)-(b.order||0));
+  if(!items.length) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:2rem;">No officers yet. Add one above.</td></tr>';
+    return;
+  }
+  const colorMap = {cyan:'#00f5d4',amber:'#ffb800',green:'#39d98a',purple:'#9b5de5',red:'#ff3366',blue:'#0ea5e9'};
+  tb.innerHTML = items.map(o => `
+    <tr>
+      <td>
+        ${o.photo
+          ? `<img src="${o.photo}" class="officer-photo-thumb" onerror="this.style.display='none'">`
+          : `<div class="officer-photo-placeholder">${(o.name||'?')[0].toUpperCase()}</div>`}
+      </td>
+      <td><div class="bold">${o.name||'—'}</div></td>
+      <td><span style="color:${colorMap[o.colorKey||'cyan']||'var(--cyan)'};font-size:0.68rem;">${o.role||'—'}</span></td>
+      <td>
+        <div class="color-swatch" style="background:${colorMap[o.colorKey||'cyan']||'#00f5d4'};width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);"></div>
+      </td>
+      <td style="font-size:0.72rem;">${o.order||0}</td>
+      <td>
+        <div style="display:flex;gap:0.4rem;">
+          <button class="btn btn-cy" style="padding:0.25rem 0.6rem;font-size:0.58rem;" onclick="editOfficer('${o.key}')">Edit</button>
+          <button class="btn btn-re" style="padding:0.25rem 0.6rem;font-size:0.58rem;" onclick="deleteOfficer('${o.key}')">×</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openOfficerModal() {
+  editOfficerKey = null;
+  officerPhotoUrl = null;
+  officerColorName = 'cyan';
+  officerColorHex = '#00f5d4';
+  document.getElementById('officerModalTitle').textContent = 'Add Officer';
+  document.getElementById('off-name').value = '';
+  document.getElementById('off-role').value = 'Club President';
+  document.getElementById('off-desc').value = '';
+  document.getElementById('off-order').value = 0;
+  document.getElementById('off-custom-role').value = '';
+  document.getElementById('off-custom-group').style.display = 'none';
+  document.getElementById('officer-photo-preview').style.display = 'none';
+  document.getElementById('officer-photo-placeholder').style.display = 'flex';
+  document.getElementById('officer-photo-url-display').textContent = '';
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+  document.querySelector('.color-swatch[data-color="cyan"]')?.classList.add('selected');
+  openModal('officerModal');
+}
+
+async function editOfficer(key) {
+  const snap = await db.ref(`officers/${key}`).once('value');
+  const o = snap.val(); if(!o) return;
+  editOfficerKey = key;
+  officerPhotoUrl = o.photo || null;
+  officerColorName = o.colorKey || 'cyan';
+  officerColorHex = o.colorHex || '#00f5d4';
+  document.getElementById('officerModalTitle').textContent = 'Edit Officer';
+  document.getElementById('off-name').value = o.name || '';
+  const roleSelect = document.getElementById('off-role');
+  const standardRoles = ['Club President','Vice President','Secretary','Treasurer','Auditor','PIO / PR','Technical Lead','Member'];
+  if(standardRoles.includes(o.role)) {
+    roleSelect.value = o.role;
+    document.getElementById('off-custom-group').style.display = 'none';
+  } else {
+    roleSelect.value = 'Custom';
+    document.getElementById('off-custom-role').value = o.role || '';
+    document.getElementById('off-custom-group').style.display = 'flex';
+  }
+  document.getElementById('off-desc').value = o.desc || '';
+  document.getElementById('off-order').value = o.order || 0;
+  // Photo
+  if(o.photo) {
+    const img = document.getElementById('officer-photo-preview');
+    img.src = o.photo; img.style.display = 'block';
+    document.getElementById('officer-photo-placeholder').style.display = 'none';
+    document.getElementById('officer-photo-url-display').textContent = '✓ Photo loaded';
+  }
+  // Color swatches
+  document.querySelectorAll('.color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.color === officerColorName);
+  });
+  openModal('officerModal');
+}
+
+function selectOfficerColor(el, colorKey, hex) {
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  officerColorName = colorKey;
+  officerColorHex = hex;
+}
+
+async function handleOfficerPhotoUpload(e) {
+  const file = e.target.files[0]; if(!file) return;
+  toast('Uploading photo to Cloudinary…');
+  try {
+    const result = await uploadToCloudinary(file);
+    officerPhotoUrl = result.url;
+    const img = document.getElementById('officer-photo-preview');
+    img.src = officerPhotoUrl; img.style.display = 'block';
+    document.getElementById('officer-photo-placeholder').style.display = 'none';
+    document.getElementById('officer-photo-url-display').textContent = '✓ Uploaded';
+    toast('Photo uploaded');
+  } catch(err) { toast('Upload failed: '+err.message,'err'); }
+}
+
+async function submitOfficer() {
+  const name = document.getElementById('off-name').value.trim();
+  if(!name) { toast('Name is required','warn'); return; }
+  const roleVal = document.getElementById('off-role').value;
+  const role = roleVal === 'Custom' ? document.getElementById('off-custom-role').value.trim() : roleVal;
+  if(!role) { toast('Position is required','warn'); return; }
+  const data = {
+    name, role,
+    desc: document.getElementById('off-desc').value.trim(),
+    order: parseInt(document.getElementById('off-order').value)||0,
+    colorKey: officerColorName,
+    colorHex: officerColorHex,
+    photo: officerPhotoUrl || null,
+    updated: Date.now()
+  };
+  if(editOfficerKey) {
+    await db.ref(`officers/${editOfficerKey}`).update(data);
+    toast('Officer updated');
+  } else {
+    data.created = Date.now();
+    await db.ref('officers').push(data);
+    toast('Officer added');
+  }
+  closeModal('officerModal');
+}
+
+async function deleteOfficer(key) {
+  if(!confirm('Remove this officer?')) return;
+  await db.ref(`officers/${key}`).remove();
+  toast('Officer removed','warn');
+}
+
+// Toggle custom role input
+document.addEventListener('change', e => {
+  if(e.target.id === 'off-role') {
+    document.getElementById('off-custom-group').style.display = e.target.value === 'Custom' ? 'flex' : 'none';
+  }
+});
+
+// ─── Admin Quick Announcement ─────────────────────────────────────────────────
+async function admPostAnnouncement() {
+  const title = document.getElementById('adm-ann-title')?.value.trim();
+  const content = document.getElementById('adm-ann-body')?.value.trim();
+  const isPublic = document.getElementById('adm-ann-vis')?.value === 'true';
+  const priority = document.getElementById('adm-ann-priority')?.value || 'normal';
+  if(!title||!content) { toast('Fill title and body','warn'); return; }
+  await db.ref('announcements').push({
+    title, content, public: isPublic, priority,
+    file: null,
+    author: currentUser.displayName || currentUser.email,
+    author_role: currentRole,
+    created_by: currentUser.uid,
+    timestamp: Date.now()
+  });
+  document.getElementById('adm-ann-title').value = '';
+  document.getElementById('adm-ann-body').value = '';
+  toast(`📢 Announcement published${priority==='urgent'?' — URGENT':''}${currentRole==='pio'?' [PIO]':''}`);
+}
+
+// ─── PWA Control Actions ──────────────────────────────────────────────────────
+function pwaLog(msg) {
+  const el = document.getElementById('pwaControlsLog');
+  if(!el) return;
+  el.innerHTML += `<div style="padding:0.25rem 0;border-bottom:1px solid var(--border);">${new Date().toLocaleTimeString()} — ${msg}</div>`;
+}
+
+async function admPurgeCache() {
+  if(!('serviceWorker' in navigator)) { pwaLog('Service Worker not available.'); return; }
+  const reg = await navigator.serviceWorker.getRegistration();
+  if(!reg?.active) { pwaLog('No active SW found.'); return; }
+  reg.active.postMessage({ type: 'PURGE_CACHE' });
+  navigator.serviceWorker.addEventListener('message', e => {
+    if(e.data?.type === 'CACHE_PURGED') pwaLog('✓ All SW caches purged. SW will rebuild on next request.');
+  }, { once: true });
+  pwaLog('Purge command sent to SW…');
+  checkSWCacheCount();
+}
+
+async function admCheckQueue() {
+  if(!('serviceWorker' in navigator)) { pwaLog('SW not available.'); return; }
+  const reg = await navigator.serviceWorker.getRegistration();
+  if(!reg?.active) { pwaLog('No active SW.'); return; }
+  reg.active.postMessage({ type: 'GET_QUEUE_COUNT' });
+  navigator.serviceWorker.addEventListener('message', e => {
+    if(e.data?.type === 'QUEUE_COUNT') pwaLog(`Offline queue: ${e.data.count} item(s) pending sync.`);
+  }, { once: true });
+}
+
+async function admRegisterPeriodic() {
+  if(!('serviceWorker' in navigator)) { pwaLog('SW not supported.'); return; }
+  const reg = await navigator.serviceWorker.getRegistration();
+  if(!reg?.active) { pwaLog('No active SW.'); return; }
+  reg.active.postMessage({ type: 'REGISTER_PERIODIC' });
+  navigator.serviceWorker.addEventListener('message', e => {
+    if(e.data?.type === 'PERIODIC_REGISTERED') pwaLog('✓ Periodic background sync registered (15 min interval).');
+    if(e.data?.type === 'PERIODIC_UNSUPPORTED') pwaLog('⚠ Periodic sync not supported on this browser/device. Install the PWA for best support.');
+  }, { once: true });
+}
+
+async function admSendTestPush() {
+  if(!('serviceWorker' in navigator)) { pwaLog('SW not supported.'); return; }
+  const reg = await navigator.serviceWorker.getRegistration();
+  if(!reg) { pwaLog('SW not registered.'); return; }
+  reg.showNotification('RoboSys Test 🔔', {
+    body: `Test push from Admin Panel · ${new Date().toLocaleTimeString()}`,
+    icon: '/favicon.ico',
+    badge: '/favicon.ico',
+    tag: 'robosys-test',
+    vibrate: [200,100,200],
+  });
+  pwaLog('✓ Test notification sent (local).');
+}
+
+// ─── SW registration + update flow ───────────────────────────────────────────
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    // Listen for a new SW waiting to activate
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      newSW?.addEventListener('statechange', () => {
+        if(newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          toast('Update available — refresh to apply.','warn');
+        }
+      });
+    });
+  }).catch(() => {});
+
+  // Handle messages from SW
+  navigator.serviceWorker.addEventListener('message', e => {
+    const { type } = e.data || {};
+    if(type === 'SYNC_SUCCESS') toast('Offline action synced ✓');
+    if(type === 'SYNC_FAILED')  toast('Offline action failed to sync','err');
+    if(type === 'NAVIGATE' && e.data.url) {
+      const mod = new URL(e.data.url, location.origin).hash.replace('#','');
+      if(MODULES.includes(mod)) switchModule(mod);
+    }
+  });
+
+  // Online/offline feedback
+  window.addEventListener('online',  () => toast('Back online — syncing…'));
+  window.addEventListener('offline', () => toast('You are offline. Changes will sync when reconnected.','warn'));
+}
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+const initHash = window.location.hash.replace('#','');
+if(MODULES.includes(initHash)) {
+  switchModule(initHash);
+}
+</script>
+</body>
+</html>
