@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Salapi — Peso Money Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,450;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#182620;
+  --ink-2:#223229;
+  --paper:#F5F1E3;
+  --paper-dim:#EAE3CE;
+  --paper-line: rgba(24,38,32,.14);
+  --gold:#C79A2B;
+  --gold-deep:#8F6E1B;
+  --teal:#2F6F5E;
+  --teal-deep:#1F4B3F;
+  --rust:#B5482B;
+  --ink-soft:#5B675E;
+  --white:#FFFDF7;
+  --shadow: 0 10px 30px rgba(24,38,32,.14);
+  --radius: 14px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--ink);
+  color:var(--paper);
+  font-family:'Inter',system-ui,sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.display{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  letter-spacing:-.01em;
+  margin:0;
+}
+.mono{font-family:'IBM Plex Mono',monospace;}
+button{font-family:inherit;}
+a{color:inherit;}
+::selection{background:var(--gold);color:var(--ink);}
+
+/* App shell */
+#app{
+  max-width:520px;
+  margin:0 auto;
+  min-height:100vh;
+  background:var(--paper);
+  color:var(--ink);
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 0 60px rgba(0,0,0,.4);
+}
+@media(min-width:900px){
+  #app{ max-width:none; flex-direction:row; min-height:100vh; }
+  #sidebar{ display:flex !important; }
+  #bottomnav{ display:none !important; }
+  #pages{ flex:1; max-width:760px; }
+}
+
+/* Top bar */
+#topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 20px 10px;
+  position:sticky; top:0; z-index:5;
+  background:var(--paper);
+  border-bottom:1px solid var(--paper-line);
+}
+#topbar .brand{ display:flex; align-items:center; gap:9px; }
+#topbar .brand .mark{
+  width:28px;height:28px;border-radius:50%;
+  background:conic-gradient(from 180deg,var(--gold),var(--teal),var(--gold));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fraunces',serif;font-weight:700;font-size:14px;color:var(--white);
+  box-shadow: inset 0 0 0 2px var(--paper);
+}
+#topbar h1{font-size:19px;}
+#topbar .sub{font-size:11px;color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;}
+
+/* Sidebar (desktop) */
+#sidebar{
+  display:none; width:230px; flex-direction:column; gap:2px;
+  background:var(--ink); color:var(--paper); padding:26px 14px;
+}
+#sidebar .brand{display:flex;align-items:center;gap:10px;margin-bottom:26px;padding:0 10px;}
+#sidebar .brand .mark{width:30px;height:30px;border-radius:50%;background:conic-gradient(from 180deg,var(--gold),var(--teal),var(--gold));display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:700;color:var(--white);}
+#sidebar .brand div h1{font-size:17px;color:var(--paper);}
+#sidebar .brand div span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9fae9f;}
+.navlink{
+  display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;
+  color:#c9d3c9;text-decoration:none;font-size:14.5px;font-weight:500;cursor:pointer;border:none;background:none;width:100%;text-align:left;
+}
+.navlink svg{flex:none;}
+.navlink.active{ background:rgba(199,154,43,.16); color:var(--gold); }
+.navlink:hover{ color:var(--paper); }
+
+/* Bottom nav (mobile) */
+#bottomnav{
+  display:flex; position:sticky; bottom:0; z-index:5;
+  background:var(--ink); border-top:1px solid rgba(255,255,255,.06);
+  padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+}
+#bottomnav button{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+  background:none;border:none;color:#8b988c; font-size:10.5px; padding:6px 2px; cursor:pointer;
+}
+#bottomnav button.active{ color:var(--gold); }
+#bottomnav svg{width:20px;height:20px;}
+
+#pages{ flex:1; padding-bottom:12px; }
+.page{ display:none; padding:18px 20px 34px; animation:fadeIn .25s ease; }
+.page.active{ display:block; }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+/* Guilloché signature motif */
+.guil-wrap{ position:relative; border-radius:18px; overflow:hidden; background:linear-gradient(160deg,var(--teal-deep),var(--ink) 75%); color:var(--paper); padding:22px 20px 20px; }
+.guil-wrap svg.guil{ position:absolute; inset:0; width:100%; height:100%; opacity:.35; }
+.guil-wrap .content{ position:relative; z-index:1; }
+
+/* Cards */
+.card{ background:var(--white); border:1px solid var(--paper-line); border-radius:var(--radius); padding:16px; margin-bottom:12px; }
+.card.tight{ padding:12px 14px; }
+.row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.stack{ display:flex; flex-direction:column; gap:10px; }
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.muted{ color:var(--ink-soft); }
+.small{ font-size:12.5px; }
+.label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); font-weight:600; }
+
+/* Buttons */
+.btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:11px; border:none; padding:13px 18px; font-weight:600; font-size:14.5px; cursor:pointer; transition:transform .08s ease; }
+.btn:active{ transform:scale(.98); }
+.btn-primary{ background:var(--ink); color:var(--paper); }
+.btn-gold{ background:var(--gold); color:var(--ink); }
+.btn-outline{ background:transparent; color:var(--ink); border:1.5px solid var(--paper-line); }
+.btn-danger{ background:transparent; color:var(--rust); border:1.5px solid rgba(181,72,43,.35); }
+.btn-block{ width:100%; }
+.btn-sm{ padding:8px 12px; font-size:12.5px; border-radius:8px; }
+.iconbtn{ background:var(--paper-dim); border:none; border-radius:9px; width:34px;height:34px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+
+/* Status chips */
+.chip{ display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:4px 9px; border-radius:20px; }
+.chip-verified{ background:rgba(47,111,94,.14); color:var(--teal); }
+.chip-review{ background:rgba(181,72,43,.13); color:var(--rust); }
+.chip-corrected{ background:rgba(199,154,43,.18); color:var(--gold-deep); }
+.chip-manual{ background:rgba(24,38,32,.08); color:var(--ink-soft); }
+
+/* Forms */
+input,select,textarea{
+  font-family:inherit; font-size:14.5px; padding:11px 12px; border-radius:9px; border:1.5px solid var(--paper-line);
+  background:var(--white); color:var(--ink); width:100%;
+}
+input:focus,select:focus,textarea:focus{ outline:2px solid var(--gold); outline-offset:1px; }
+label.field{ display:flex; flex-direction:column; gap:6px; font-size:12.5px; font-weight:600; color:var(--ink-soft); }
+
+/* Scan / camera */
+.camwrap{ position:relative; border-radius:16px; overflow:hidden; background:#0e1712; aspect-ratio:3/4; display:flex; align-items:center; justify-content:center; }
+.camwrap video, .camwrap img.captured{ width:100%; height:100%; object-fit:cover; display:block; }
+.cam-frame{ position:absolute; inset:8%; border:2px dashed rgba(245,241,227,.55); border-radius:14px; pointer-events:none; }
+.cam-hint{ position:absolute; bottom:12px; left:0; right:0; text-align:center; font-size:12px; color:var(--paper); background:rgba(0,0,0,.4); padding:6px 10px; border-radius:20px; width:fit-content; margin:0 auto; }
+.captrow{ display:flex; gap:10px; margin-top:12px; }
+.hiddenfile{ display:none; }
+
+/* Progress */
+.progressbar{ height:8px; border-radius:6px; background:var(--paper-dim); overflow:hidden; }
+.progressbar > div{ height:100%; background:linear-gradient(90deg,var(--teal),var(--gold)); transition:width .25s ease; }
+
+/* Item list */
+.item{ border:1px solid var(--paper-line); border-radius:12px; padding:12px 14px; margin-bottom:9px; background:var(--white); }
+.item .head{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+.item .amt{ font-family:'Fraunces',serif; font-weight:600; font-size:19px; }
+.item .meta{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+.item .serial{ font-family:'IBM Plex Mono',monospace; font-size:13px; letter-spacing:.02em; margin-top:6px; }
+.item .evidence{ margin-top:8px; font-size:11.5px; color:var(--ink-soft); background:var(--paper-dim); border-radius:8px; padding:8px 10px; }
+.item .actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.q-char{ color:var(--rust); font-weight:700; }
+
+/* Nav header inside pages */
+.pagehead{ margin-bottom:16px; }
+.pagehead h2{ font-size:22px; }
+.pagehead p{ margin:4px 0 0; font-size:13px; color:var(--ink-soft); }
+
+/* Tabs */
+.tabs{ display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; padding-bottom:2px; }
+.tab{ flex:none; padding:8px 13px; border-radius:20px; border:1.5px solid var(--paper-line); background:var(--white); font-size:12.5px; font-weight:600; cursor:pointer; color:var(--ink-soft); }
+.tab.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+
+/* Photo thumb strip */
+.thumbstrip{ display:flex; gap:8px; overflow-x:auto; padding:2px 0 6px; }
+.thumb{ position:relative; flex:none; width:74px; height:98px; border-radius:9px; overflow:hidden; border:1.5px solid var(--paper-line); }
+.thumb img{ width:100%; height:100%; object-fit:cover; }
+.thumb .num{ position:absolute; top:4px; left:4px; background:rgba(24,38,32,.72); color:var(--paper); font-size:9.5px; padding:1px 5px; border-radius:6px; }
+.thumb .rm{ position:absolute; top:3px; right:3px; background:rgba(24,38,32,.72); color:var(--paper); border:none; border-radius:50%; width:18px;height:18px; font-size:11px; cursor:pointer; }
+.addthumb{ flex:none; width:74px; height:98px; border-radius:9px; border:1.5px dashed var(--paper-line); display:flex; align-items:center; justify-content:center; background:var(--paper-dim); cursor:pointer; font-size:22px; color:var(--ink-soft); }
+
+/* Toast */
+#toast{ position:fixed; left:50%; bottom:90px; transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:10px; font-size:13px; z-index:50; opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease; box-shadow:var(--shadow); }
+#toast.show{ opacity:1; transform:translateX(-50%) translateY(-6px); }
+
+/* Modal */
+.modal-backdrop{ position:fixed; inset:0; background:rgba(15,22,18,.55); display:none; align-items:flex-end; justify-content:center; z-index:40; }
+.modal-backdrop.show{ display:flex; }
+.modal{ background:var(--paper); width:100%; max-width:520px; border-radius:18px 18px 0 0; padding:20px; max-height:86vh; overflow-y:auto; }
+@media(min-width:900px){ .modal-backdrop{ align-items:center; } .modal{ border-radius:18px; max-width:460px; } }
+.modal .modalhead{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+
+.empty{ text-align:center; padding:34px 14px; color:var(--ink-soft); }
+.empty svg{ opacity:.5; margin-bottom:10px; }
+
+.hidden{ display:none !important; }
+hr.sep{ border:none; border-top:1px solid var(--paper-line); margin:14px 0; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div id="sidebar">
+    <div class="brand">
+      <div class="mark">S</div>
+      <div><h1>Salapi</h1><span>Peso Money Scanner</span></div>
+    </div>
+    <button class="navlink" data-page="home">🏠 Home</button>
+    <button class="navlink" data-page="scan">📷 Scan</button>
+    <button class="navlink" data-page="bulk">🗂 Bulk Scan</button>
+    <button class="navlink" data-page="history">🕘 History</button>
+    <button class="navlink" data-page="records">🔎 Records</button>
+    <button class="navlink" data-page="settings">⚙️ Settings</button>
+    <div style="margin-top:auto;padding:10px;font-size:11px;color:#7c8a7d;">No AI. No cloud. Local‑first, deterministic recognition.</div>
+  </div>
+
+  <div id="pages">
+    <div id="topbar">
+      <div class="brand"><div class="mark">S</div><div><h1>Salapi</h1></div></div>
+      <div class="sub" id="topbarSub">Money Scanner</div>
+    </div>
+
+    <!-- HOME -->
+    <section class="page" id="page-home">
+      <div class="guil-wrap" style="margin-bottom:16px;">
+        <svg class="guil" viewBox="0 0 400 220" preserveAspectRatio="none" id="guilSvg"></svg>
+        <div class="content">
+          <div class="label" style="color:#cfe3da;">Today's total</div>
+          <div class="display mono" id="todayTotal" style="font-size:34px;color:var(--paper);">₱0.00</div>
+          <div class="row small" style="margin-top:10px;color:#cfe3da;">
+            <span id="todayItems">0 items</span>
+            <span id="todayReview">0 need review</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-bottom:14px;">
+        <button class="btn btn-gold btn-block" data-page="scan">📷 Scan Money</button>
+        <button class="btn btn-outline btn-block" data-page="bulk">🗂 Bulk Scan</button>
+      </div>
+
+      <div class="pagehead"><h2 style="font-size:16px;">Recent scans</h2></div>
+      <div id="recentScans"></div>
+    </section>
+
+    <!-- SCAN -->
+    <section class="page" id="page-scan">
+      <div class="pagehead"><h2>Scan money</h2><p>Photograph one shot of bills and/or coins to recognize and count.</p></div>
+
+      <div id="scanCapturePane">
+        <div class="camwrap" id="scanCamWrap">
+          <video id="scanVideo" autoplay playsinline muted></video>
+          <div class="cam-frame"></div>
+          <div class="cam-hint" id="scanCamHint">Fill the frame with money, avoid glare</div>
+        </div>
+        <div class="captrow">
+          <button class="btn btn-outline btn-block" id="scanUploadBtn">⬆ Upload photo</button>
+          <button class="btn btn-gold btn-block" id="scanCaptureBtn">● Capture</button>
+        </div>
+        <input type="file" accept="image/*" class="hiddenfile" id="scanFileInput">
+      </div>
+
+      <div id="scanProcessingPane" class="hidden">
+        <div class="card">
+          <div class="label">Processing</div>
+          <div class="progressbar" style="margin:10px 0;"><div id="scanProgressBar" style="width:0%;"></div></div>
+          <div class="small muted" id="scanProgressText">Starting…</div>
+        </div>
+      </div>
+
+      <div id="scanResultPane" class="hidden"></div>
+    </section>
+
+    <!-- BULK -->
+    <section class="page" id="page-bulk">
+      <div class="pagehead"><h2>Bulk scan</h2><p>Take or select several photos, then process them together as one session.</p></div>
+
+      <div id="bulkSelectPane">
+        <div class="thumbstrip" id="bulkThumbs">
+          <div class="addthumb" id="bulkAddThumb">+</div>
+        </div>
+        <input type="file" accept="image/*" multiple class="hiddenfile" id="bulkFileInput">
+        <input type="file" accept="image/*" capture="environment" class="hiddenfile" id="bulkCameraInput">
+        <div class="captrow">
+          <button class="btn btn-outline btn-block" id="bulkTakePhotoBtn">📷 Take photo</button>
+          <button class="btn btn-outline btn-block" id="bulkUploadBtn">⬆ Upload photos</button>
+        </div>
+        <button class="btn btn-gold btn-block" style="margin-top:10px;" id="bulkProcessBtn" disabled>Process 0 photos</button>
+      </div>
+
+      <div id="bulkProcessingPane" class="hidden">
+        <div class="card">
+          <div class="label" id="bulkProgLabel">Photo 1 of 1</div>
+          <div class="progressbar" style="margin:10px 0;"><div id="bulkProgressBar" style="width:0%;"></div></div>
+          <div class="small muted" id="bulkProgressText">Starting…</div>
+        </div>
+      </div>
+
+      <div id="bulkResultPane" class="hidden"></div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="page" id="page-history">
+      <div class="pagehead"><h2>Scan history</h2><p>Every completed scan session.</p></div>
+      <div id="historyList"></div>
+    </section>
+
+    <!-- RECORDS -->
+    <section class="page" id="page-records">
+      <div class="pagehead"><h2>Records</h2><p>Search and filter every individual detected item.</p></div>
+      <div class="card tight" style="margin-bottom:12px;">
+        <input type="text" id="recordSearch" placeholder="Search serial number, denomination, scan ID…">
+      </div>
+      <div class="tabs" id="recordTypeTabs">
+        <div class="tab active" data-v="all">All</div>
+        <div class="tab" data-v="bill">Bills</div>
+        <div class="tab" data-v="coin">Coins</div>
+      </div>
+      <div class="tabs" id="recordStatusTabs">
+        <div class="tab active" data-v="all">Any status</div>
+        <div class="tab" data-v="verified">Verified</div>
+        <div class="tab" data-v="review">Needs review</div>
+        <div class="tab" data-v="corrected">Corrected</div>
+        <div class="tab" data-v="manual">Manual</div>
+      </div>
+      <div class="row" style="margin-bottom:10px;">
+        <button class="btn btn-outline btn-sm" id="recordManualAddBtn">+ Add money manually</button>
+        <span class="small muted" id="recordCount"></span>
+      </div>
+      <div id="recordList"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="page" id="page-settings">
+      <div class="pagehead"><h2>Settings</h2></div>
+      <div class="card">
+        <div class="label">Recognition engine</div>
+        <div class="small" id="engineStatus" style="margin-top:6px;">Checking…</div>
+      </div>
+      <div class="card">
+        <div class="label">Privacy</div>
+        <p class="small" style="margin-top:6px;">All photos and results are processed and stored on this device only, inside your browser's IndexedDB. Nothing is uploaded to a server or to any AI service. Recognition uses deterministic computer‑vision and OCR techniques (edge/contour/circle detection, template and color matching, Tesseract OCR) — never machine learning, and it never invents characters it could not read.</p>
+      </div>
+      <div class="card">
+        <div class="label">Storage</div>
+        <div class="row small" style="margin-top:6px;"><span>Scans stored</span><span id="statScans" class="mono">0</span></div>
+        <div class="row small" style="margin-top:4px;"><span>Items stored</span><span id="statItems" class="mono">0</span></div>
+        <button class="btn btn-danger btn-sm" style="margin-top:12px;" id="clearAllBtn">Clear all local data</button>
+      </div>
+      <div class="card">
+        <div class="label">Currency</div>
+        <p class="small" style="margin-top:6px;">Supported: Philippine Peso (₱). The recognition engine is data‑driven, so additional currencies can be added later without rebuilding the app — see <code>CurrencyData</code> in source.</p>
+      </div>
+    </section>
+  </div>
+
+  <div id="bottomnav">
+    <button class="active" data-page="home">🏠<span>Home</span></button>
+    <button data-page="scan">📷<span>Scan</span></button>
+    <button data-page="bulk">🗂<span>Bulk</span></button>
+    <button data-page="history">🕘<span>History</span></button>
+    <button data-page="records">🔎<span>Records</span></button>
+    <button data-page="settings">⚙️<span>Settings</span></button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<canvas id="workCanvas" class="hidden"></canvas>
+
+<script>
+var Module = {
+  onRuntimeInitialized: function(){ window.__cvReadyResolve && window.__cvReadyResolve(true); }
+};
+window.cvReady = new Promise(function(resolve){ window.__cvReadyResolve = resolve; setTimeout(function(){ resolve(false); }, 20000); });
+</script>
+<script src="https://docs.opencv.org/4.8.0/opencv.js" async onerror="window.__cvReadyResolve && window.__cvReadyResolve(false)"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
+
+<script>
+/* =========================================================================
+   SALAPI — deterministic (no-AI) peso money scanner
+   Architecture: CurrencyData -> DB (IndexedDB) -> Vision pipeline -> UI
+   ========================================================================= */
+
+/* ---------------------------------------------------------------------- *
+ * 1. CURRENCY DATA MODEL  (data-driven, extensible to other currencies)
+ * ---------------------------------------------------------------------- */
+const CurrencyData = {
+  PHP: {
+    code: 'PHP', symbol: '₱', name: 'Philippine Peso', minorUnit: 'centavo', minorPerMajor: 100,
+    // All current New Generation Currency banknotes share the same physical
+    // size, so aspect ratio alone cannot separate denominations — color and
+    // printed-numeral OCR are the discriminating signals here.
+    banknotes: [
+      { denomination: 20,   colorName:'orange', rgb:[214,120,45],  aspectRatio:160/66 },
+      { denomination: 50,   colorName:'red',    rgb:[190,55,60],   aspectRatio:160/66 },
+      { denomination: 100,  colorName:'violet', rgb:[120,70,140],  aspectRatio:160/66 },
+      { denomination: 200,  colorName:'green',  rgb:[60,130,95],   aspectRatio:160/66 },
+      { denomination: 500,  colorName:'yellow', rgb:[210,180,60],  aspectRatio:160/66 },
+      { denomination: 1000, colorName:'blue',   rgb:[55,95,150],   aspectRatio:160/66 },
+    ],
+    // Coin diameters are reference values (mm) used only for *relative*
+    // ranking between coins detected in the same photo, or when a banknote
+    // in-frame supplies a pixel scale. They are editable/refinable data,
+    // not hard-coded logic.
+    coins: [
+      { denomination: 1,  diameterMm:23, colorName:'silver', metallic:true },
+      { denomination: 5,  diameterMm:25, colorName:'gold',   metallic:true },
+      { denomination: 10, diameterMm:27, colorName:'bicolor',metallic:true },
+      { denomination: 20, diameterMm:30, colorName:'bicolor',metallic:true },
+    ]
+  }
+};
+const ACTIVE_CURRENCY = 'PHP';
+function currency(){ return CurrencyData[ACTIVE_CURRENCY]; }
+
+function pesoToMinor(v){ return Math.round(v * currency().minorPerMajor); }
+function minorToDisplay(minor){
+  const sym = currency().symbol;
+  const sign = minor < 0 ? '-' : '';
+  const abs = Math.abs(minor);
+  const major = Math.floor(abs / 100);
+  const cents = String(abs % 100).padStart(2,'0');
+  return sign + sym + major.toLocaleString('en-PH') + '.' + cents;
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
+
+/* ---------------------------------------------------------------------- *
+ * 2. STORAGE — IndexedDB
+ *    stores: scans (sessions), photos (blobs+meta), items (detected money)
+ * ---------------------------------------------------------------------- */
+const DB = (function(){
+  let dbp = null;
+  function open(){
+    if(dbp) return dbp;
+    dbp = new Promise((resolve,reject)=>{
+      const req = indexedDB.open('salapi-db', 1);
+      req.onupgradeneeded = (e)=>{
+        const db = e.target.result;
+        if(!db.objectStoreNames.contains('scans')){
+          const s = db.createObjectStore('scans', {keyPath:'id'});
+          s.createIndex('createdAt','createdAt');
+        }
+        if(!db.objectStoreNames.contains('photos')){
+          db.createObjectStore('photos', {keyPath:'id'});
+        }
+        if(!db.objectStoreNames.contains('items')){
+          const it = db.createObjectStore('items', {keyPath:'id'});
+          it.createIndex('scanId','scanId');
+          it.createIndex('serialNumber','serialNumber');
+          it.createIndex('denomination','denomination');
+        }
+      };
+      req.onsuccess = ()=>resolve(req.result);
+      req.onerror = ()=>reject(req.error);
+    });
+    return dbp;
+  }
+  async function tx(store, mode){ const db = await open(); return db.transaction(store, mode).objectStore(store); }
+  async function put(store, val){ const s = await tx(store,'readwrite'); return new Promise((res,rej)=>{ const r=s.put(val); r.onsuccess=()=>res(val); r.onerror=()=>rej(r.error); }); }
+  async function get(store, key){ const s = await tx(store,'readonly'); return new Promise((res,rej)=>{ const r=s.get(key); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+  async function getAll(store){ const s = await tx(store,'readonly'); return new Promise((res,rej)=>{ const r=s.getAll(); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+  async function getAllByIndex(store, idx, key){ const s = await tx(store,'readonly'); return new Promise((res,rej)=>{ const r=s.index(idx).getAll(key); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+  async function del(store, key){ const s = await tx(store,'readwrite'); return new Promise((res,rej)=>{ const r=s.delete(key); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error); }); }
+  async function clearAll(){ const db = await open(); ['scans','photos','items'].forEach(name=>{ db.transaction(name,'readwrite').objectStore(name).clear(); }); }
+  return { put, get, getAll, getAllByIndex, del, clearAll };
+})();
+
+/* ---------------------------------------------------------------------- *
+ * 3. VISION PIPELINE — deterministic CV + traditional OCR only.
+ *    No ML models, no AI APIs. Every signal below is a measurable,
+ *    explainable rule: edges, contours, circles, color, geometry, OCR text.
+ * ---------------------------------------------------------------------- */
+const Vision = (function(){
+
+  let ocrWorker = null;
+  async function getOcrWorker(){
+    if(ocrWorker) return ocrWorker;
+    if(typeof Tesseract === 'undefined') return null;
+    ocrWorker = await Tesseract.createWorker('eng', 1, { logger: ()=>{} });
+    await ocrWorker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' });
+    return ocrWorker;
+  }
+
+  /* ---- image quality gate --------------------------------------------- */
+  function assessQuality(canvas){
+    const ctx = canvas.getContext('2d');
+    const {width:w, height:h} = canvas;
+    const data = ctx.getImageData(0,0,w,h).data;
+    let sum=0, sumSq=0, n=0;
+    // sample a grid for speed
+    const step = Math.max(1, Math.floor(Math.sqrt((w*h)/40000)));
+    let lumaGrid = [];
+    for(let y=0;y<h;y+=step){
+      let row=[];
+      for(let x=0;x<w;x+=step){
+        const i=(y*w+x)*4;
+        const luma = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+        row.push(luma); sum+=luma; n++;
+      }
+      lumaGrid.push(row);
+    }
+    const mean = sum/n;
+    // crude blur estimate: average absolute Laplacian over sampled grid
+    let lapSum=0, lapN=0;
+    for(let y=1;y<lumaGrid.length-1;y++){
+      for(let x=1;x<lumaGrid[y].length-1;x++){
+        const lap = Math.abs(4*lumaGrid[y][x] - lumaGrid[y-1][x] - lumaGrid[y+1][x] - lumaGrid[y][x-1] - lumaGrid[y][x+1]);
+        lapSum += lap; lapN++;
+      }
+    }
+    const sharpness = lapN ? lapSum/lapN : 0;
+    const issues = [];
+    if(mean < 45) issues.push('too_dark');
+    if(mean > 235) issues.push('overexposed');
+    if(sharpness < 3.2) issues.push('too_blurry');
+    if(w < 480 || h < 480) issues.push('low_resolution');
+    return { mean, sharpness, issues, ok: issues.length===0 };
+  }
+
+  /* ---- helpers ---------------------------------------------------------*/
+  function canvasFromImage(img, maxDim){
+    maxDim = maxDim || 1400;
+    let {naturalWidth:w, naturalHeight:h} = img;
+    if(!w){ w=img.width; h=img.height; }
+    const scale = Math.min(1, maxDim / Math.max(w,h));
+    const cw = Math.round(w*scale), ch = Math.round(h*scale);
+    const c = document.createElement('canvas'); c.width=cw; c.height=ch;
+    c.getContext('2d').drawImage(img, 0,0, cw, ch);
+    return c;
+  }
+
+  function avgColorOfCanvas(canvas){
+    const ctx = canvas.getContext('2d');
+    const {width:w,height:h} = canvas;
+    const d = ctx.getImageData(0,0,w,h).data;
+    let r=0,g=0,b=0,n=0;
+    for(let i=0;i<d.length;i+=4*7){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++; }
+    return [r/n, g/n, b/n];
+  }
+  function colorDistance(a,b){ return Math.sqrt((a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2); }
+
+  /* ---- bill detection (contours -> quadrilaterals -> perspective warp) -*/
+  function detectBillRegions(cvSrc){
+    // cvSrc: cv.Mat (RGBA). Returns array of {corners:[4 pts], mat: warped RGBA Mat, score}
+    const cv = window.cv;
+    const results = [];
+    let gray=new cv.Mat(), blur=new cv.Mat(), edges=new cv.Mat();
+    let contours=new cv.MatVector(), hierarchy=new cv.Mat();
+    try{
+      cv.cvtColor(cvSrc, gray, cv.COLOR_RGBA2GRAY);
+      cv.GaussianBlur(gray, blur, new cv.Size(5,5), 0);
+      cv.Canny(blur, edges, 40, 120);
+      const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(5,5));
+      cv.dilate(edges, edges, kernel);
+      cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+      const imgArea = cvSrc.rows * cvSrc.cols;
+      for(let i=0;i<contours.size();i++){
+        const cnt = contours.get(i);
+        const area = cv.contourArea(cnt);
+        if(area < imgArea*0.03){ cnt.delete(); continue; }
+        const peri = cv.arcLength(cnt, true);
+        const approx = new cv.Mat();
+        cv.approxPolyDP(cnt, approx, 0.02*peri, true);
+        if(approx.rows === 4){
+          const pts = [];
+          for(let r=0;r<4;r++) pts.push({x:approx.intPtr(r,0)[0], y:approx.intPtr(r,0)[1]});
+          const ordered = orderQuadPoints(pts);
+          const wTop = dist(ordered[0],ordered[1]), wBot = dist(ordered[3],ordered[2]);
+          const hLeft = dist(ordered[0],ordered[3]), hRight = dist(ordered[1],ordered[2]);
+          const w = (wTop+wBot)/2, h=(hLeft+hRight)/2;
+          const ar = Math.max(w,h)/Math.max(1,Math.min(w,h));
+          const targetAr = currency().banknotes[0].aspectRatio;
+          const arScore = 1 - Math.min(1, Math.abs(ar-targetAr)/targetAr);
+          if(arScore > 0.55){
+            const warped = warpQuad(cvSrc, ordered, w, h);
+            results.push({ corners: ordered, mat: warped, arScore, areaFrac: area/imgArea });
+          }
+        }
+        approx.delete(); cnt.delete();
+      }
+    } finally {
+      gray.delete(); blur.delete(); edges.delete(); contours.delete(); hierarchy.delete();
+    }
+    results.sort((a,b)=> b.areaFrac - a.areaFrac);
+    return results.slice(0,6);
+  }
+  function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+  function orderQuadPoints(pts){
+    // returns [top-left, top-right, bottom-right, bottom-left]
+    const sum = pts.map(p=>p.x+p.y), diff = pts.map(p=>p.x-p.y);
+    const tl = pts[sum.indexOf(Math.min(...sum))];
+    const br = pts[sum.indexOf(Math.max(...sum))];
+    const tr = pts[diff.indexOf(Math.max(...diff))];
+    const bl = pts[diff.indexOf(Math.min(...diff))];
+    return [tl,tr,br,bl];
+  }
+  function warpQuad(cvSrc, ordered, w, h){
+    const cv = window.cv;
+    const targetW = Math.max(220, Math.round(w));
+    const targetH = Math.round(targetW / currency().banknotes[0].aspectRatio);
+    const srcTri = cv.matFromArray(4,1,cv.CV_32FC2, [ordered[0].x,ordered[0].y, ordered[1].x,ordered[1].y, ordered[2].x,ordered[2].y, ordered[3].x,ordered[3].y]);
+    const dstTri = cv.matFromArray(4,1,cv.CV_32FC2, [0,0, targetW,0, targetW,targetH, 0,targetH]);
+    const M = cv.getPerspectiveTransform(srcTri, dstTri);
+    const dst = new cv.Mat();
+    cv.warpPerspective(cvSrc, dst, M, new cv.Size(targetW, targetH));
+    srcTri.delete(); dstTri.delete(); M.delete();
+    return dst;
+  }
+
+  function matToCanvas(mat){
+    const c = document.createElement('canvas'); c.width = mat.cols; c.height = mat.rows;
+    window.cv.imshow(c, mat);
+    return c;
+  }
+
+  /* ---- bill denomination recognition (color + OCR evidence fusion) ----*/
+  async function recognizeBill(warpedCanvas){
+    const avg = avgColorOfCanvas(warpedCanvas);
+    const candidates = currency().banknotes.map(b=>({
+      denomination: b.denomination,
+      colorScore: 1 - Math.min(1, colorDistance(avg, b.rgb) / 220)
+    })).sort((a,b)=>b.colorScore - a.colorScore);
+
+    // OCR the corner regions where the printed numeral typically sits
+    const worker = await getOcrWorker();
+    let ocrRaw = '', ocrDigits = '';
+    if(worker){
+      try{
+        const w = warpedCanvas.width, h = warpedCanvas.height;
+        const crop = document.createElement('canvas');
+        crop.width = Math.round(w*0.34); crop.height = Math.round(h*0.5);
+        crop.getContext('2d').drawImage(warpedCanvas, w-crop.width, h-crop.height, crop.width, crop.height, 0,0, crop.width, crop.height);
+        const { data } = await worker.recognize(crop);
+        ocrRaw = (data.text||'').trim();
+        ocrDigits = (ocrRaw.match(/\d+/g)||[]).join('');
+      }catch(e){ /* OCR failure is tolerated — falls back to color evidence */ }
+    }
+    const ocrMatch = currency().banknotes.find(b => ocrDigits.includes(String(b.denomination)));
+
+    const top = candidates[0];
+    const evidence = [];
+    evidence.push(`Dominant color match: ₱${top.denomination} (score ${(top.colorScore*100).toFixed(0)}%)`);
+    if(ocrMatch) evidence.push(`Printed numeral OCR: "${ocrRaw.slice(0,24)}" → matches ₱${ocrMatch.denomination}`);
+    else if(ocrRaw) evidence.push(`Printed numeral OCR (unmatched): "${ocrRaw.slice(0,24)}"`);
+    else evidence.push('Printed numeral OCR: no legible text found');
+
+    let denomination, status, alt=null;
+    if(ocrMatch && ocrMatch.denomination === top.denomination){
+      denomination = top.denomination; status = 'strong';
+    } else if(ocrMatch){
+      denomination = ocrMatch.denomination; status = 'possible'; alt = top.denomination;
+      evidence.push('Color and OCR signals disagree — flagged for review.');
+    } else if(top.colorScore > 0.72){
+      denomination = top.denomination; status = 'possible';
+    } else {
+      denomination = top.denomination; status = 'review'; alt = candidates[1] && candidates[1].denomination;
+    }
+    return { denomination, status, evidence, altCandidate: alt, ocrRaw };
+  }
+
+  /* ---- serial number OCR ------------------------------------------------ */
+  async function readSerialNumber(warpedCanvas){
+    const worker = await getOcrWorker();
+    if(!worker) return { raw:'', status:'unavailable' };
+    try{
+      const w = warpedCanvas.width, h = warpedCanvas.height;
+      // Serial numbers on PH bills typically sit lower-right and upper-left;
+      // scan a slim strip near the bottom edge as a general-purpose region.
+      const crop = document.createElement('canvas');
+      crop.width = Math.round(w*0.42); crop.height = Math.round(h*0.16);
+      crop.getContext('2d').drawImage(warpedCanvas, w-crop.width-Math.round(w*0.04), h-crop.height-Math.round(h*0.08), crop.width, crop.height, 0,0, crop.width, crop.height);
+      // upscale + contrast for OCR
+      const up = document.createElement('canvas'); up.width = crop.width*3; up.height = crop.height*3;
+      const uctx = up.getContext('2d'); uctx.imageSmoothingEnabled = true;
+      uctx.drawImage(crop,0,0,up.width,up.height);
+      const { data } = await worker.recognize(up);
+      let raw = (data.text||'').replace(/\s+/g,'').toUpperCase();
+      raw = raw.replace(/[^A-Z0-9?]/g,'');
+      if(!raw) return { raw:'', status:'not_found' };
+      const hasLowConfChar = /[^A-Z0-9]/.test(raw) || (data.confidence!==undefined && data.confidence < 55);
+      return { raw, status: hasLowConfChar ? 'uncertain' : 'read', confidence: data.confidence };
+    }catch(e){ return { raw:'', status:'error' }; }
+  }
+
+  /* ---- coin detection (Hough circles) ----------------------------------*/
+  function detectCoins(cvSrc){
+    const cv = window.cv;
+    const circles = new cv.Mat();
+    let gray = new cv.Mat(), blur = new cv.Mat();
+    const found = [];
+    try{
+      cv.cvtColor(cvSrc, gray, cv.COLOR_RGBA2GRAY);
+      cv.medianBlur(gray, blur, 5);
+      const minDim = Math.min(cvSrc.rows, cvSrc.cols);
+      cv.HoughCircles(blur, circles, cv.HOUGH_GRADIENT, 1, minDim/9, 90, 34, Math.round(minDim*0.03), Math.round(minDim*0.28));
+      for(let i=0;i<circles.cols;i++){
+        const x = circles.data32F[i*3], y = circles.data32F[i*3+1], r = circles.data32F[i*3+2];
+        found.push({x,y,r});
+      }
+    } finally { circles.delete(); gray.delete(); blur.delete(); }
+    // de-duplicate near-identical circles
+    const deduped = [];
+    for(const c of found){
+      if(!deduped.some(d => Math.hypot(d.x-c.x,d.y-c.y) < Math.max(d.r,c.r)*0.6)) deduped.push(c);
+    }
+    return deduped.slice(0,40);
+  }
+
+  function cropCoin(cvSrc, circle){
+    const cv = window.cv;
+    const pad = 1.15;
+    const x0 = Math.max(0, Math.round(circle.x - circle.r*pad));
+    const y0 = Math.max(0, Math.round(circle.y - circle.r*pad));
+    const x1 = Math.min(cvSrc.cols, Math.round(circle.x + circle.r*pad));
+    const y1 = Math.min(cvSrc.rows, Math.round(circle.y + circle.r*pad));
+    const rect = new cv.Rect(x0,y0, Math.max(1,x1-x0), Math.max(1,y1-y0));
+    const roi = cvSrc.roi(rect);
+    const canvas = matToCanvas(roi);
+    roi.delete();
+    return canvas;
+  }
+
+  /* ---- coin recognition: relative size + color/metallic evidence -------*/
+  function recognizeCoins(cvSrc, circles, billScaleMmPerPx){
+    const defs = currency().coins;
+    const radii = circles.map(c=>c.r);
+    const maxR = Math.max(...radii, 1);
+    return circles.map((c, idx)=>{
+      const canvas = cropCoin(cvSrc, c);
+      const avg = avgColorOfCanvas(canvas);
+      const brightness = (avg[0]+avg[1]+avg[2])/3;
+      const saturation = Math.max(avg[0],avg[1],avg[2]) - Math.min(avg[0],avg[1],avg[2]);
+      const looksGold = avg[0] > avg[2] + 12 && avg[1] > avg[2];
+      const evidence = [];
+      let candidates;
+      let diameterMm = null;
+      if(billScaleMmPerPx){
+        diameterMm = Math.round(c.r*2*billScaleMmPerPx);
+        candidates = defs.map(d=>({ denomination:d.denomination, score: 1 - Math.min(1, Math.abs(d.diameterMm-diameterMm)/6) }));
+        evidence.push(`Estimated diameter (scaled from banknote in frame): ${diameterMm} mm`);
+      } else {
+        // No absolute scale available in this photo — rank by relative
+        // radius against other coins detected in the same image.
+        const relRank = radii.filter(r=>r<=c.r).length / radii.length; // 0..1, larger => bigger coin
+        candidates = defs.map((d,i)=>({ denomination:d.denomination, score: 1 - Math.abs((i/(defs.length-1)) - relRank) }));
+        evidence.push('No banknote in frame for scale — ranked by relative size vs. other detected coins only.');
+      }
+      candidates.sort((a,b)=>b.score-a.score);
+      const colorMatch = looksGold ? ['gold','bicolor'] : ['silver','bicolor'];
+      candidates.forEach(cand=>{
+        const def = defs.find(d=>d.denomination===cand.denomination);
+        if(def && colorMatch.includes(def.colorName)) cand.score += 0.08;
+      });
+      candidates.sort((a,b)=>b.score-a.score);
+      evidence.push(`Surface tone: ${looksGold? 'warm/gold-toned':'cool/silver-toned'} (avg RGB ${avg.map(v=>Math.round(v)).join(',')})`);
+
+      const visibleFrac = estimateVisibility(cvSrc, c);
+      evidence.push(`Estimated visible area: ~${Math.round(visibleFrac*100)}%`);
+
+      let status;
+      if(!billScaleMmPerPx && radii.length < 2){
+        status = 'review'; evidence.push('Only one coin in photo and no scale reference — size alone is not measurable.');
+      } else if(candidates[0].score > 0.72 && (candidates[1]? candidates[0].score-candidates[1].score>0.15 : true)){
+        status = 'possible';
+      } else {
+        status = 'review';
+      }
+      if(visibleFrac < 0.45){ status='review'; evidence.push('Less than half the coin is visible — treat as low confidence.'); }
+
+      return {
+        id: uid(), circle: c, canvas, denomination: candidates[0].denomination,
+        candidates: candidates.slice(0,2).map(c2=>c2.denomination),
+        side: 'unknown', visibleFrac, status, evidence, diameterMm
+      };
+    });
+  }
+
+  function estimateVisibility(cvSrc, circle){
+    // crude proxy: fraction of the circle's bounding box that lies within image bounds
+    const x0 = circle.x - circle.r, x1 = circle.x + circle.r;
+    const y0 = circle.y - circle.r, y1 = circle.y + circle.r;
+    const visX = Math.min(x1,cvSrc.cols) - Math.max(x0,0);
+    const visY = Math.min(y1,cvSrc.rows) - Math.max(y0,0);
+    const fullArea = (2*circle.r)*(2*circle.r);
+    const visArea = Math.max(0,visX) * Math.max(0,visY);
+    return Math.max(0.05, Math.min(1, visArea/fullArea));
+  }
+
+  /* ---- full pipeline for one photo -------------------------------------*/
+  async function processPhoto(imgEl, onProgress){
+    const report = (p,t)=> onProgress && onProgress(p,t);
+    report(5,'Checking image quality…');
+    const qCanvas = canvasFromImage(imgEl, 900);
+    const quality = assessQuality(qCanvas);
+
+    const bigCanvas = canvasFromImage(imgEl, 1400);
+    if(!quality.ok){
+      return { quality, bills:[], coins:[], canvas:bigCanvas };
+    }
+    const cvAvailable = !!window.cv && !!window.cv.Mat;
+    if(!cvAvailable){
+      return { quality:{...quality, issues:[...quality.issues,'vision_engine_unavailable']}, bills:[], coins:[], canvas:bigCanvas };
+    }
+    const cv = window.cv;
+    report(15,'Loading image into vision engine…');
+    const src = cv.imread(bigCanvas);
+
+    report(25,'Detecting bill boundaries…');
+    const billRegions = detectBillRegions(src);
+    const bills = [];
+    let billScaleMmPerPx = null;
+    for(let i=0;i<billRegions.length;i++){
+      const region = billRegions[i];
+      report(30 + i*10, `Reading bill ${i+1} of ${billRegions.length}…`);
+      const canvas = matToCanvas(region.mat);
+      const rec = await recognizeBill(canvas);
+      report(30 + i*10 + 5, `Reading serial number ${i+1}…`);
+      const serial = await readSerialNumber(canvas);
+      if(!billScaleMmPerPx){
+        billScaleMmPerPx = 160 / canvas.width; // NGC bills are 160mm wide
+      }
+      bills.push({
+        id: uid(), type:'bill', denomination: rec.denomination, altCandidate: rec.altCandidate,
+        status: rec.status, evidence: rec.evidence, canvas,
+        serialRaw: serial.raw, serialStatus: serial.status, serialCorrected: null,
+        corners: region.corners
+      });
+      region.mat.delete();
+    }
+
+    report(65,'Detecting coins…');
+    const circles = detectCoins(src);
+    report(75,'Analyzing coins…');
+    const coinResults = circles.length ? recognizeCoins(src, circles, billScaleMmPerPx) : [];
+    const coins = coinResults.map(c=>({
+      id:c.id, type:'coin', denomination:c.denomination, candidates:c.candidates,
+      status: c.status==='possible' ? 'possible' : c.status, evidence:c.evidence,
+      canvas:c.canvas, side:c.side, visibleFrac:c.visibleFrac, circle:c.circle
+    }));
+
+    src.delete();
+    report(95,'Finalizing…');
+    return { quality, bills, coins, canvas:bigCanvas, overlapWarning: circles.length>0 && circles.length !== coins.length };
+  }
+
+  return { assessQuality, canvasFromImage, processPhoto, matToCanvas };
+})();
+
+/* ---------------------------------------------------------------------- *
+ * 4. UI STATE + RENDERING
+ * ---------------------------------------------------------------------- */
+const UI = { currentPage:'home' };
+
+function toast(msg){
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 2400);
+}
+function openModal(html){ document.getElementById('modalBody').innerHTML = html; document.getElementById('modalBackdrop').classList.add('show'); }
+function closeModal(){ document.getElementById('modalBackdrop').classList.remove('show'); }
+document.getElementById('modalBackdrop').addEventListener('click', e=>{ if(e.target.id==='modalBackdrop') closeModal(); });
+
+function goPage(page){
+  UI.currentPage = page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id === 'page-'+page));
+  document.querySelectorAll('.navlink').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
+  document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
+  document.getElementById('topbarSub').textContent = {home:'Money Scanner',scan:'Scan',bulk:'Bulk Scan',history:'History',records:'Records',settings:'Settings'}[page]||'';
+  if(page==='home') renderHome();
+  if(page==='history') renderHistory();
+  if(page==='records') renderRecords();
+  if(page==='settings') renderSettings();
+  if(page==='scan') resetScanPane();
+  if(page==='bulk') resetBulkPane();
+}
+document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('click', ()=>goPage(el.dataset.page)));
+
+function statusChip(status){
+  const map = {
+    strong:['chip-verified','✓ Recognized'],
+    verified:['chip-verified','✓ Verified'],
+    possible:['chip-review','⚠ Possible match'],
+    review:['chip-review','⚠ Needs review'],
+    corrected:['chip-corrected','✎ Corrected'],
+    manual:['chip-manual','＋ Manual entry']
+  };
+  const [cls,label] = map[status] || map.review;
+  return `<span class="chip ${cls}">${label}</span>`;
+}
+
+/* -- Guilloché signature SVG generator (deterministic wave interference) */
+function buildGuilloche(){
+  const svg = document.getElementById('guilSvg'); if(!svg) return;
+  let out = '';
+  for(let k=0;k<7;k++){
+    let d = 'M0,'+(30+k*24);
+    for(let x=0;x<=400;x+=8){
+      const y = 30 + k*24 + 16*Math.sin((x/400)*Math.PI*3 + k*0.7) * Math.sin((x/400)*Math.PI*0.6);
+      d += ` L${x},${y.toFixed(1)}`;
+    }
+    out += `<path d="${d}" fill="none" stroke="${k%2? '#C79A2B':'#F5F1E3'}" stroke-width="1" opacity="${0.5 - k*0.03}"/>`;
+  }
+  svg.innerHTML = out;
+}
+buildGuilloche();
+
+/* ---------------------------------------------------------------------- *
+ * 5. HOME
+ * ---------------------------------------------------------------------- */
+async function renderHome(){
+  const scans = (await DB.getAll('scans')).sort((a,b)=>b.createdAt-a.createdAt);
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const todayScans = scans.filter(s=>s.createdAt >= todayStart.getTime());
+  const todayTotal = todayScans.reduce((s,x)=>s+x.totalMinor,0);
+  const todayItems = todayScans.reduce((s,x)=>s+x.itemCount,0);
+  const todayReview = todayScans.reduce((s,x)=>s+(x.needsReviewCount||0),0);
+  document.getElementById('todayTotal').textContent = minorToDisplay(todayTotal);
+  document.getElementById('todayItems').textContent = todayItems + ' item' + (todayItems===1?'':'s');
+  document.getElementById('todayReview').textContent = todayReview + ' need review';
+
+  const el = document.getElementById('recentScans');
+  if(!scans.length){
+    el.innerHTML = emptyState('No scans yet', 'Scan your first bill or coin to get started.');
+    return;
+  }
+  el.innerHTML = scans.slice(0,8).map(s=>scanRow(s)).join('');
+  el.querySelectorAll('[data-open-scan]').forEach(b=>b.addEventListener('click', ()=>openScanDetail(b.dataset.openScan)));
+}
+function emptyState(title, sub){
+  return `<div class="empty"><div style="font-size:34px;">🪙</div><div style="font-weight:600;color:var(--ink);">${title}</div><div class="small">${sub}</div></div>`;
+}
+function scanRow(s){
+  const dateLabel = formatDateLabel(s.createdAt);
+  return `<div class="card tight" data-open-scan="${s.id}" style="cursor:pointer;">
+    <div class="row">
+      <div>
+        <div style="font-weight:700;font-family:'Fraunces',serif;font-size:17px;">${minorToDisplay(s.totalMinor)}</div>
+        <div class="small muted">${s.itemCount} items · ${s.photoCount} photo${s.photoCount===1?'':'s'} · ${dateLabel}</div>
+      </div>
+      ${s.needsReviewCount ? `<span class="chip chip-review">${s.needsReviewCount} review</span>` : `<span class="chip chip-verified">✓ complete</span>`}
+    </div>
+  </div>`;
+}
+function formatDateLabel(ts){
+  const d = new Date(ts); const today = new Date(); today.setHours(0,0,0,0);
+  const yest = today.getTime() - 86400000;
+  const dOnly = new Date(d); dOnly.setHours(0,0,0,0);
+  if(dOnly.getTime()===today.getTime()) return 'Today';
+  if(dOnly.getTime()===yest) return 'Yesterday';
+  return d.toLocaleDateString('en-PH', {month:'short', day:'numeric'});
+}
+
+/* ---------------------------------------------------------------------- *
+ * 6. SCAN (single photo)
+ * ---------------------------------------------------------------------- */
+let scanStream = null;
+function resetScanPane(){
+  document.getElementById('scanCapturePane').classList.remove('hidden');
+  document.getElementById('scanProcessingPane').classList.add('hidden');
+  document.getElementById('scanResultPane').classList.add('hidden');
+  document.getElementById('scanResultPane').innerHTML = '';
+  startCamera();
+}
+async function startCamera(){
+  const video = document.getElementById('scanVideo');
+  try{
+    if(scanStream) return;
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment', width:{ideal:1280}, height:{ideal:1280} } });
+    video.srcObject = scanStream;
+  }catch(e){
+    document.getElementById('scanCamHint').textContent = 'Camera unavailable — use Upload photo instead';
+  }
+}
+function stopCamera(){ if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; } }
+
+document.getElementById('scanCaptureBtn').addEventListener('click', async ()=>{
+  const video = document.getElementById('scanVideo');
+  if(!video.videoWidth){ toast('Camera not ready yet'); return; }
+  const c = document.createElement('canvas'); c.width = video.videoWidth; c.height = video.videoHeight;
+  c.getContext('2d').drawImage(video,0,0);
+  const img = new Image(); img.src = c.toDataURL('image/jpeg',0.92);
+  await img.decode();
+  runSingleScan(img);
+});
+document.getElementById('scanUploadBtn').addEventListener('click', ()=>document.getElementById('scanFileInput').click());
+document.getElementById('scanFileInput').addEventListener('change', async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const img = await fileToImage(f);
+  runSingleScan(img);
+  e.target.value = '';
+});
+function fileToImage(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = async ()=>{ const img = new Image(); img.onload=()=>resolve(img); img.onerror=reject; img.src = reader.result; };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function runSingleScan(img){
+  stopCamera();
+  document.getElementById('scanCapturePane').classList.add('hidden');
+  document.getElementById('scanProcessingPane').classList.remove('hidden');
+  const bar = document.getElementById('scanProgressBar'), txt = document.getElementById('scanProgressText');
+  const result = await Vision.processPhoto(img, (p,t)=>{ bar.style.width=p+'%'; txt.textContent=t; });
+  document.getElementById('scanProcessingPane').classList.add('hidden');
+  renderSingleScanResult(result);
+}
+
+function qualityMessage(issues){
+  const map = {
+    too_dark: 'Image is too dark', overexposed:'Image is overexposed / too much glare',
+    too_blurry:'Image is too blurry', low_resolution:'Image resolution is too low',
+    vision_engine_unavailable: 'The vision engine (OpenCV.js) could not load — check your network connection'
+  };
+  return issues.map(i=>map[i]||i).join(', ');
+}
+
+let pendingSingleResult = null;
+function renderSingleScanResult(result){
+  pendingSingleResult = result;
+  const pane = document.getElementById('scanResultPane');
+  pane.classList.remove('hidden');
+  if(!result.quality.ok){
+    pane.innerHTML = `<div class="card">
+      <div class="label" style="color:var(--rust);">⚠ Image quality is too low</div>
+      <p class="small">${qualityMessage(result.quality.issues)}</p>
+      <p class="small muted">Try: better lighting, hold the camera steady, move closer, avoid glare.</p>
+      <button class="btn btn-primary btn-block" style="margin-top:10px;" id="retakeBtn">Retake</button>
+    </div>`;
+    document.getElementById('retakeBtn').addEventListener('click', resetScanPane);
+    return;
+  }
+  if(!result.bills.length && !result.coins.length){
+    pane.innerHTML = `<div class="card">
+      <div class="label">No money detected</div>
+      <p class="small">We couldn't find any bills or coins with enough confidence. You can retake the photo or add items manually.</p>
+      <div class="captrow">
+        <button class="btn btn-outline btn-block" id="retakeBtn2">Retake</button>
+        <button class="btn btn-gold btn-block" id="manualBtn2">+ Add manually</button>
+      </div>
+    </div>`;
+    document.getElementById('retakeBtn2').addEventListener('click', resetScanPane);
+    document.getElementById('manualBtn2').addEventListener('click', ()=>openManualEntryModal(null, refreshSingleAfterManual));
+    return;
+  }
+  pane.innerHTML = renderScanItemsHTML(result.bills, result.coins) + `
+    <div class="card tight">
+      ${totalsSummaryHTML(result.bills, result.coins)}
+    </div>
+    <div class="captrow">
+      <button class="btn btn-outline btn-block" id="retakeBtn3">Retake</button>
+      <button class="btn btn-gold btn-block" id="saveScanBtn">Save scan</button>
+    </div>`;
+  wireItemCardEvents(pane, result.bills.concat(result.coins), (updated)=>{ renderSingleScanResult(result); });
+  document.getElementById('retakeBtn3').addEventListener('click', resetScanPane);
+  document.getElementById('saveScanBtn').addEventListener('click', ()=>saveScanSession([result]));
+}
+function refreshSingleAfterManual(item){
+  if(!pendingSingleResult) return;
+  (item.type==='bill'? pendingSingleResult.bills : pendingSingleResult.coins).push(item);
+  renderSingleScanResult(pendingSingleResult);
+}
+
+function totalsSummaryHTML(bills, coins){
+  const billMinor = bills.reduce((s,b)=>s+pesoToMinor(b.denomination),0);
+  const coinMinor = coins.reduce((s,c)=>s+pesoToMinor(c.denomination),0);
+  const reviewCount = bills.concat(coins).filter(i=>i.status==='review').length;
+  return `<div class="row small"><span>Banknotes</span><span class="mono">${minorToDisplay(billMinor)} (${bills.length})</span></div>
+    <div class="row small" style="margin-top:4px;"><span>Coins</span><span class="mono">${minorToDisplay(coinMinor)} (${coins.length})</span></div>
+    <hr class="sep">
+    <div class="row"><span style="font-weight:700;">Total</span><span class="mono" style="font-weight:700;font-size:18px;">${minorToDisplay(billMinor+coinMinor)}</span></div>
+    ${reviewCount? `<div class="small" style="color:var(--rust);margin-top:6px;">⚠ ${reviewCount} item${reviewCount===1?'':'s'} need review before saving</div>`:''}`;
+}
+
+function renderScanItemsHTML(bills, coins){
+  let html = '';
+  if(bills.length){
+    html += `<div class="label" style="margin:6px 0 8px;">Banknotes</div>`;
+    html += bills.map(billItemHTML).join('');
+  }
+  if(coins.length){
+    html += `<div class="label" style="margin:14px 0 8px;">Coins</div>`;
+    html += coins.map(coinItemHTML).join('');
+  }
+  return html;
+}
+
+function billItemHTML(b){
+  const serialDisplay = b.serialCorrected || b.serialRaw || '';
+  const serialHtml = serialDisplay ? highlightUnknownChars(serialDisplay) : '<span class="muted">Not legible</span>';
+  return `<div class="item" data-item-id="${b.id}" data-item-kind="bill">
+    <div class="head">
+      <div>
+        <div class="amt">₱${b.denomination}</div>
+        <div class="meta">Banknote${b.altCandidate?` · alt candidate ₱${b.altCandidate}`:''}</div>
+        <div class="serial mono">${serialHtml}</div>
+      </div>
+      ${statusChip(b.status)}
+    </div>
+    <div class="evidence">${(b.evidence||[]).map(e=>`• ${e}`).join('<br>')}</div>
+    <div class="actions">
+      <button class="btn btn-outline btn-sm" data-act="view">View photo</button>
+      <button class="btn btn-outline btn-sm" data-act="edit">Edit</button>
+      <button class="btn btn-gold btn-sm" data-act="verify">Verify</button>
+      <button class="btn btn-danger btn-sm" data-act="remove">Remove</button>
+    </div>
+  </div>`;
+}
+function coinItemHTML(c){
+  const candText = c.candidates && c.candidates.length>1 ? ` · possible: ${c.candidates.map(d=>'₱'+d).join(', ')}` : '';
+  return `<div class="item" data-item-id="${c.id}" data-item-kind="coin">
+    <div class="head">
+      <div>
+        <div class="amt">₱${c.denomination} coin</div>
+        <div class="meta">Visible ~${Math.round((c.visibleFrac||1)*100)}%${candText}</div>
+      </div>
+      ${statusChip(c.status)}
+    </div>
+    <div class="evidence">${(c.evidence||[]).map(e=>`• ${e}`).join('<br>')}</div>
+    <div class="actions">
+      <button class="btn btn-outline btn-sm" data-act="view">View photo</button>
+      <button class="btn btn-outline btn-sm" data-act="edit">Edit</button>
+      <button class="btn btn-gold btn-sm" data-act="verify">Verify</button>
+      <button class="btn btn-danger btn-sm" data-act="remove">Remove</button>
+    </div>
+  </div>`;
+}
+function highlightUnknownChars(s){
+  return s.split('').map(ch => ch==='?' ? `<span class="q-char">?</span>` : ch).join('');
+}
+
+function wireItemCardEvents(container, allItems, onChange){
+  container.querySelectorAll('.item').forEach(card=>{
+    const id = card.dataset.itemId;
+    const item = allItems.find(i=>i.id===id);
+    if(!item) return;
+    card.querySelectorAll('[data-act]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const act = btn.dataset.act;
+        if(act==='view') showPhotoModal(item);
+        if(act==='edit') openEditItemModal(item, onChange);
+        if(act==='verify'){ item.status = item.serialStatus==='uncertain' ? 'review' : 'verified'; onChange(item); toast('Marked verified'); }
+        if(act==='remove'){ removeItemFromArray(allItems, id); container.parentElement && onChange(item); reRenderAfterRemoval(); }
+      });
+    });
+  });
+  function reRenderAfterRemoval(){
+    if(container.id==='' ) return;
+  }
+}
+function removeItemFromArray(arr, id){ const i = arr.findIndex(x=>x.id===id); if(i>-1) arr.splice(i,1); }
+
+function showPhotoModal(item){
+  const src = item.canvas ? item.canvas.toDataURL('image/jpeg',0.85) : '';
+  openModal(`<div class="modalhead"><h3>Original detection</h3><button class="iconbtn" onclick="closeModal()">✕</button></div>
+    <img src="${src}" style="width:100%;border-radius:10px;">
+    <p class="small muted" style="margin-top:10px;">This is the cropped/perspective-corrected region the recognizer analyzed.</p>`);
+}
+
+function openEditItemModal(item, onChange){
+  const isBill = item.type==='bill';
+  openModal(`<div class="modalhead"><h3>Edit ${isBill?'banknote':'coin'}</h3><button class="iconbtn" onclick="closeModal()">✕</button></div>
+    <div class="stack">
+      <label class="field">Denomination
+        <select id="editDenom">
+          ${(isBill?currency().banknotes:currency().coins).map(d=>`<option value="${d.denomination}" ${d.denomination===item.denomination?'selected':''}>₱${d.denomination}</option>`).join('')}
+        </select>
+      </label>
+      ${isBill? `<label class="field">Serial number
+        <input id="editSerial" value="${(item.serialCorrected||item.serialRaw||'').replace(/"/g,'')}" placeholder="e.g. AB123456">
+      </label>` : `<label class="field">Side
+        <select id="editSide"><option value="unknown" ${item.side==='unknown'?'selected':''}>Unknown</option><option value="front" ${item.side==='front'?'selected':''}>Front</option><option value="back" ${item.side==='back'?'selected':''}>Back</option></select>
+      </label>`}
+      <button class="btn btn-gold btn-block" id="saveEditBtn">Save correction</button>
+    </div>`);
+  document.getElementById('saveEditBtn').addEventListener('click', ()=>{
+    const newDenom = Number(document.getElementById('editDenom').value);
+    const changed = newDenom !== item.denomination;
+    item.denomination = newDenom;
+    if(isBill){
+      const newSerial = document.getElementById('editSerial').value.trim().toUpperCase();
+      if(newSerial !== (item.serialRaw||'')){ item.serialCorrected = newSerial; }
+    } else {
+      item.side = document.getElementById('editSide').value;
+    }
+    item.status = 'corrected';
+    closeModal();
+    onChange(item);
+    toast('Correction saved');
+  });
+}
+
+/* ---------------------------------------------------------------------- *
+ * 7. BULK SCAN (multiple photos → one session)
+ * ---------------------------------------------------------------------- */
+let bulkPhotos = []; // {id, img, dataUrl}
+function resetBulkPane(){
+  bulkPhotos = [];
+  document.getElementById('bulkSelectPane').classList.remove('hidden');
+  document.getElementById('bulkProcessingPane').classList.add('hidden');
+  document.getElementById('bulkResultPane').classList.add('hidden');
+  document.getElementById('bulkResultPane').innerHTML='';
+  renderBulkThumbs();
+}
+function renderBulkThumbs(){
+  const strip = document.getElementById('bulkThumbs');
+  strip.innerHTML = bulkPhotos.map((p,i)=>`<div class="thumb"><span class="num">${i+1}</span><img src="${p.dataUrl}"><button class="rm" data-rm="${p.id}">✕</button></div>`).join('') + `<div class="addthumb" id="bulkAddThumb2">+</div>`;
+  strip.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click', ()=>{ bulkPhotos = bulkPhotos.filter(p=>p.id!==b.dataset.rm); renderBulkThumbs(); updateBulkProcessBtn(); }));
+  document.getElementById('bulkAddThumb2').addEventListener('click', ()=>document.getElementById('bulkFileInput').click());
+  updateBulkProcessBtn();
+}
+function updateBulkProcessBtn(){
+  const btn = document.getElementById('bulkProcessBtn');
+  btn.disabled = bulkPhotos.length===0;
+  btn.textContent = `Process ${bulkPhotos.length} photo${bulkPhotos.length===1?'':'s'}`;
+}
+document.getElementById('bulkAddThumb').addEventListener('click', ()=>document.getElementById('bulkFileInput').click());
+document.getElementById('bulkTakePhotoBtn').addEventListener('click', ()=>document.getElementById('bulkCameraInput').click());
+document.getElementById('bulkUploadBtn').addEventListener('click', ()=>document.getElementById('bulkFileInput').click());
+async function addBulkFiles(fileList){
+  for(const f of fileList){
+    const img = await fileToImage(f);
+    bulkPhotos.push({ id: uid(), img, dataUrl: img.src });
+  }
+  renderBulkThumbs();
+}
+document.getElementById('bulkFileInput').addEventListener('change', async e=>{ if(e.target.files.length) await addBulkFiles(e.target.files); e.target.value=''; });
+document.getElementById('bulkCameraInput').addEventListener('change', async e=>{ if(e.target.files.length) await addBulkFiles(e.target.files); e.target.value=''; });
+
+document.getElementById('bulkProcessBtn').addEventListener('click', async ()=>{
+  if(!bulkPhotos.length) return;
+  document.getElementById('bulkSelectPane').classList.add('hidden');
+  document.getElementById('bulkProcessingPane').classList.remove('hidden');
+  const bar = document.getElementById('bulkProgressBar'), txt = document.getElementById('bulkProgressText'), label = document.getElementById('bulkProgLabel');
+  const results = [];
+  for(let i=0;i<bulkPhotos.length;i++){
+    label.textContent = `Photo ${i+1} of ${bulkPhotos.length}`;
+    const r = await Vision.processPhoto(bulkPhotos[i].img, (p,t)=>{ const overall = Math.round((i/bulkPhotos.length)*100 + p/bulkPhotos.length); bar.style.width=overall+'%'; txt.textContent=t; });
+    r.photoIndex = i;
+    r.sourceDataUrl = bulkPhotos[i].dataUrl;
+    results.push(r);
+  }
+  document.getElementById('bulkProcessingPane').classList.add('hidden');
+  renderBulkResults(results);
+});
+
+let pendingBulkResults = null;
+function renderBulkResults(results){
+  pendingBulkResults = results;
+  const pane = document.getElementById('bulkResultPane');
+  pane.classList.remove('hidden');
+  const allBills = [], allCoins = [];
+  results.forEach(r=>{ r.bills.forEach(b=>{ b.photoIndex=r.photoIndex; allBills.push(b); }); r.coins.forEach(c=>{ c.photoIndex=r.photoIndex; allCoins.push(c); }); });
+
+  // Duplicate detection — matching serial numbers across photos
+  const bySerial = {};
+  allBills.forEach(b=>{ const s = b.serialCorrected || b.serialRaw; if(s && s.length>=4 && !s.includes('?')){ (bySerial[s]=bySerial[s]||[]).push(b); } });
+  const duplicateGroups = Object.entries(bySerial).filter(([s,arr])=>arr.length>1);
+
+  const qualityBad = results.filter(r=>!r.quality.ok);
+  let html = '';
+  if(qualityBad.length){
+    html += `<div class="card"><div class="label" style="color:var(--rust);">⚠ ${qualityBad.length} photo${qualityBad.length===1?'':'s'} had quality issues</div>
+      <p class="small">${qualityBad.map(r=>`Photo ${r.photoIndex+1}: ${qualityMessage(r.quality.issues)}`).join('<br>')}</p></div>`;
+  }
+  if(duplicateGroups.length){
+    html += duplicateGroups.map(([serial,items])=>`
+      <div class="card" style="border-color:rgba(181,72,43,.35);">
+        <div class="label" style="color:var(--rust);">⚠ Possible duplicate</div>
+        <div class="mono" style="margin:4px 0;">₱${items[0].denomination} · Serial ${highlightUnknownChars(serial)}</div>
+        <div class="small">Found in Photo ${items.map(i=>i.photoIndex+1).join(', Photo ')}</div>
+        <div class="captrow">
+          <button class="btn btn-outline btn-sm" data-keep-dup="${items.map(i=>i.id).join(',')}">Keep both</button>
+          <button class="btn btn-danger btn-sm" data-rm-dup="${items[1].id}">Remove Photo ${items[1].photoIndex+1} copy</button>
+        </div>
+      </div>`).join('');
+  }
+
+  html += `<div class="tabs" id="bulkPhotoTabs"><div class="tab active" data-v="all">All photos</div>${results.map((r,i)=>`<div class="tab" data-v="${i}">Photo ${i+1}</div>`).join('')}</div>`;
+  html += `<div id="bulkItemsArea"></div>`;
+  html += `<div class="card tight">${totalsSummaryHTML(allBills, allCoins)}<div class="small muted" style="margin-top:6px;">${results.length} photo${results.length===1?'':'s'} processed</div></div>`;
+  html += `<div class="captrow"><button class="btn btn-outline btn-block" id="bulkRestartBtn">Start over</button><button class="btn btn-gold btn-block" id="bulkSaveBtn">Save bulk scan</button></div>`;
+  pane.innerHTML = html;
+
+  function renderBulkItemsArea(filter){
+    const b = filter==='all'? allBills : allBills.filter(x=>String(x.photoIndex)===filter);
+    const c = filter==='all'? allCoins : allCoins.filter(x=>String(x.photoIndex)===filter);
+    document.getElementById('bulkItemsArea').innerHTML = (b.length||c.length) ? renderScanItemsHTML(b,c) : emptyState('Nothing detected', 'No bills or coins found in this photo.');
+    wireItemCardEvents(document.getElementById('bulkItemsArea'), allBills.concat(allCoins), ()=>renderBulkResults(results));
+  }
+  renderBulkItemsArea('all');
+  pane.querySelectorAll('#bulkPhotoTabs .tab').forEach(t=>t.addEventListener('click', ()=>{
+    pane.querySelectorAll('#bulkPhotoTabs .tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+    renderBulkItemsArea(t.dataset.v);
+  }));
+  pane.querySelectorAll('[data-rm-dup]').forEach(btn=>btn.addEventListener('click', ()=>{
+    const id = btn.dataset.rmDup;
+    results.forEach(r=>{ r.bills = r.bills.filter(x=>x.id!==id); });
+    toast('Duplicate removed'); renderBulkResults(results);
+  }));
+  pane.querySelectorAll('[data-keep-dup]').forEach(btn=>btn.addEventListener('click', ()=>toast('Kept both — they will be saved as separate items')));
+
+  document.getElementById('bulkRestartBtn').addEventListener('click', resetBulkPane);
+  document.getElementById('bulkSaveBtn').addEventListener('click', ()=>saveScanSession(results));
+}
+
+/* ---------------------------------------------------------------------- *
+ * 8. SAVE SCAN SESSION → IndexedDB
+ * ---------------------------------------------------------------------- */
+async function saveScanSession(results){
+  const scanId = uid();
+  const createdAt = Date.now();
+  let allBills = [], allCoins = [];
+  const photoRecords = [];
+  for(let i=0;i<results.length;i++){
+    const r = results[i];
+    const photoId = uid();
+    const dataUrl = r.sourceDataUrl || r.canvas.toDataURL('image/jpeg',0.85);
+    photoRecords.push({ id: photoId, scanId, index:i, dataUrl, createdAt });
+    r.bills.forEach(b=>{ b.photoId = photoId; allBills.push(b); });
+    r.coins.forEach(c=>{ c.photoId = photoId; allCoins.push(c); });
+  }
+  const items = allBills.concat(allCoins).map(it=>({
+    id: it.id, scanId, photoId: it.photoId, type: it.type, currency: ACTIVE_CURRENCY,
+    denomination: it.denomination,
+    serialNumber: it.serialCorrected || it.serialRaw || null,
+    ocrRaw: it.serialRaw || null,
+    serialCorrected: it.serialCorrected || null,
+    side: it.side || null,
+    visibleFrac: it.visibleFrac!==undefined? it.visibleFrac : null,
+    recognitionStatus: it.status,
+    verificationStatus: it.status==='corrected' ? 'corrected' : (it.status==='verified' ? 'verified' : (it.status==='strong'?'auto':'needs_review')),
+    evidence: it.evidence || [],
+    thumbnail: it.canvas ? it.canvas.toDataURL('image/jpeg', 0.7) : null,
+    createdAt
+  }));
+  const totalMinor = items.reduce((s,it)=>s+pesoToMinor(it.denomination),0);
+  const needsReviewCount = items.filter(it=>it.recognitionStatus==='review').length;
+  const scan = {
+    id: scanId, createdAt, currency: ACTIVE_CURRENCY,
+    photoCount: photoRecords.length, itemCount: items.length,
+    billCount: allBills.length, coinCount: allCoins.length,
+    totalMinor, needsReviewCount, status:'completed'
+  };
+  await DB.put('scans', scan);
+  for(const p of photoRecords) await DB.put('photos', p);
+  for(const it of items) await DB.put('items', it);
+  toast('Scan saved');
+  goPage('history');
+  openScanDetail(scanId);
+}
+
+/* ---------------------------------------------------------------------- *
+ * 9. HISTORY
+ * ---------------------------------------------------------------------- */
+async function renderHistory(){
+  const scans = (await DB.getAll('scans')).sort((a,b)=>b.createdAt-a.createdAt);
+  const el = document.getElementById('historyList');
+  if(!scans.length){ el.innerHTML = emptyState('No scan history', 'Completed scans will appear here.'); return; }
+  // group by date label
+  const groups = {};
+  scans.forEach(s=>{ const l = formatDateLabel(s.createdAt); (groups[l]=groups[l]||[]).push(s); });
+  el.innerHTML = Object.entries(groups).map(([label,arr])=>`
+    <div class="label" style="margin:10px 0 6px;">${label}</div>
+    ${arr.map(scanRow).join('')}
+  `).join('');
+  el.querySelectorAll('[data-open-scan]').forEach(b=>b.addEventListener('click', ()=>openScanDetail(b.dataset.openScan)));
+}
+
+async function openScanDetail(scanId){
+  const scan = await DB.get('scans', scanId);
+  if(!scan) return;
+  const items = await DB.getAllByIndex('items','scanId', scanId);
+  const photos = await DB.getAllByIndex('photos','scanId', scanId);
+  const bills = items.filter(i=>i.type==='bill'), coins = items.filter(i=>i.type==='coin');
+  openModal(`
+    <div class="modalhead"><h3>Scan ${scan.id.slice(0,6)}</h3><button class="iconbtn" onclick="closeModal()">✕</button></div>
+    <div class="small muted" style="margin-bottom:10px;">${new Date(scan.createdAt).toLocaleString('en-PH')} · ${scan.photoCount} photo${scan.photoCount===1?'':'s'}</div>
+    <div class="thumbstrip">${photos.map((p,i)=>`<div class="thumb"><span class="num">${i+1}</span><img src="${p.dataUrl}"></div>`).join('')}</div>
+    <div class="card tight" style="margin-top:10px;">
+      <div class="row small"><span>Banknote total</span><span class="mono">${minorToDisplay(bills.reduce((s,b)=>s+pesoToMinor(b.denomination),0))} (${bills.length})</span></div>
+      <div class="row small" style="margin-top:4px;"><span>Coin total</span><span class="mono">${minorToDisplay(coins.reduce((s,c)=>s+pesoToMinor(c.denomination),0))} (${coins.length})</span></div>
+      <hr class="sep"><div class="row"><span style="font-weight:700;">Total</span><span class="mono" style="font-weight:700;">${minorToDisplay(scan.totalMinor)}</span></div>
+    </div>
+    <div class="label" style="margin:12px 0 6px;">Items</div>
+    ${items.map(itemRecordRow).join('') || '<div class="small muted">No items.</div>'}
+    <button class="btn btn-danger btn-block" style="margin-top:14px;" id="deleteScanBtn">Delete this scan</button>
+  `);
+  document.getElementById('deleteScanBtn').addEventListener('click', async ()=>{
+    if(!confirm('Delete this scan and all its items? This cannot be undone.')) return;
+    await DB.del('scans', scan.id);
+    for(const it of items) await DB.del('items', it.id);
+    for(const p of photos) await DB.del('photos', p.id);
+    closeModal(); toast('Scan deleted'); renderHistory(); renderHome();
+  });
+}
+function itemRecordRow(it){
+  const statusMap = { auto:'strong', verified:'verified', needs_review:'review', corrected:'corrected', manual:'manual' };
+  return `<div class="item">
+    <div class="head">
+      <div>
+        <div class="amt">${it.type==='bill'?'₱'+it.denomination:'₱'+it.denomination+' coin'}</div>
+        <div class="meta">${it.type==='bill'?'Banknote':'Coin'}${it.side&&it.side!=='unknown'?' · '+it.side:''}</div>
+        ${it.serialNumber? `<div class="serial mono">${highlightUnknownChars(it.serialNumber)}</div>`:''}
+      </div>
+      ${statusChip(statusMap[it.verificationStatus]||'review')}
+    </div>
+  </div>`;
+}
+
+/* ---------------------------------------------------------------------- *
+ * 10. RECORDS — search & filter across all items
+ * ---------------------------------------------------------------------- */
+let recordFilters = { type:'all', status:'all', q:'' };
+async function renderRecords(){
+  const items = await DB.getAll('items');
+  document.getElementById('recordCount').textContent = items.length + ' total';
+  applyRecordFilters(items);
+}
+function applyRecordFilters(items){
+  items = items || null;
+  (items ? Promise.resolve(items) : DB.getAll('items')).then(all=>{
+    let list = all;
+    if(recordFilters.type!=='all') list = list.filter(i=>i.type===recordFilters.type);
+    if(recordFilters.status!=='all'){
+      const map = { verified:['verified'], review:['needs_review'], corrected:['corrected'], manual:['manual'] };
+      list = list.filter(i=> (map[recordFilters.status]||[]).includes(i.verificationStatus));
+    }
+    if(recordFilters.q){
+      const q = recordFilters.q.toLowerCase();
+      list = list.filter(i => (i.serialNumber||'').toLowerCase().includes(q) || String(i.denomination).includes(q) || i.scanId.toLowerCase().includes(q) || i.currency.toLowerCase().includes(q));
+    }
+    list.sort((a,b)=>b.createdAt-a.createdAt);
+    const el = document.getElementById('recordList');
+    el.innerHTML = list.length ? list.map(itemRecordRow).join('') : emptyState('No matching records', 'Try a different search or filter.');
+  });
+}
+document.getElementById('recordSearch').addEventListener('input', e=>{ recordFilters.q = e.target.value.trim(); applyRecordFilters(); });
+document.getElementById('recordTypeTabs').addEventListener('click', e=>{
+  const t = e.target.closest('.tab'); if(!t) return;
+  document.querySelectorAll('#recordTypeTabs .tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+  recordFilters.type = t.dataset.v; applyRecordFilters();
+});
+document.getElementById('recordStatusTabs').addEventListener('click', e=>{
+  const t = e.target.closest('.tab'); if(!t) return;
+  document.querySelectorAll('#recordStatusTabs .tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+  recordFilters.status = t.dataset.v; applyRecordFilters();
+});
+
+/* ---------------------------------------------------------------------- *
+ * 11. MANUAL ENTRY
+ * ---------------------------------------------------------------------- */
+document.getElementById('recordManualAddBtn').addEventListener('click', ()=>openManualEntryModal(null, async (item)=>{
+  // standalone manual record → its own mini scan session
+  const scanId = uid(); const createdAt = Date.now();
+  const scan = { id: scanId, createdAt, currency: ACTIVE_CURRENCY, photoCount:0, itemCount:1, billCount: item.type==='bill'?1:0, coinCount:item.type==='coin'?1:0, totalMinor: pesoToMinor(item.denomination)*item.qty, needsReviewCount:0, status:'completed' };
+  await DB.put('scans', scan);
+  for(let i=0;i<item.qty;i++){
+    await DB.put('items', {
+      id: uid(), scanId, photoId:null, type:item.type, currency:ACTIVE_CURRENCY, denomination:item.denomination,
+      serialNumber: item.serial||null, ocrRaw:null, serialCorrected:null, side:null, visibleFrac:null,
+      recognitionStatus:'manual', verificationStatus:'manual', evidence:['Manually entered by user'], notes:item.notes||null,
+      thumbnail:null, createdAt
+    });
+  }
+  toast('Manual entry saved'); renderRecords(); renderHome();
+}));
+function openManualEntryModal(prefill, onSave){
+  openModal(`<div class="modalhead"><h3>Add money manually</h3><button class="iconbtn" onclick="closeModal()">✕</button></div>
+    <div class="stack">
+      <label class="field">Type
+        <select id="manType"><option value="bill">Banknote</option><option value="coin">Coin</option></select>
+      </label>
+      <label class="field">Denomination
+        <select id="manDenom"></select>
+      </label>
+      <label class="field">Quantity
+        <input type="number" id="manQty" min="1" value="1">
+      </label>
+      <label class="field">Serial number (optional)
+        <input id="manSerial" placeholder="e.g. AB123456">
+      </label>
+      <label class="field">Notes (optional)
+        <textarea id="manNotes" rows="2"></textarea>
+      </label>
+      <button class="btn btn-gold btn-block" id="manSaveBtn">Save</button>
+    </div>`);
+  function fillDenoms(){
+    const type = document.getElementById('manType').value;
+    const list = type==='bill'? currency().banknotes : currency().coins;
+    document.getElementById('manDenom').innerHTML = list.map(d=>`<option value="${d.denomination}">₱${d.denomination}</option>`).join('');
+    document.getElementById('manSerial').closest('.field').style.display = type==='bill'?'flex':'none';
+  }
+  fillDenoms();
+  document.getElementById('manType').addEventListener('change', fillDenoms);
+  document.getElementById('manSaveBtn').addEventListener('click', ()=>{
+    const item = {
+      type: document.getElementById('manType').value,
+      denomination: Number(document.getElementById('manDenom').value),
+      qty: Math.max(1, Number(document.getElementById('manQty').value)||1),
+      serial: document.getElementById('manSerial').value.trim().toUpperCase() || null,
+      notes: document.getElementById('manNotes').value.trim() || null,
+      status:'manual', evidence:['Manually entered by user'], id: uid()
+    };
+    closeModal();
+    onSave(item);
+  });
+}
+
+/* ---------------------------------------------------------------------- *
+ * 12. SETTINGS
+ * ---------------------------------------------------------------------- */
+async function renderSettings(){
+  const scans = await DB.getAll('scans'); const items = await DB.getAll('items');
+  document.getElementById('statScans').textContent = scans.length;
+  document.getElementById('statItems').textContent = items.length;
+  const cvOk = !!(window.cv && window.cv.Mat);
+  const ocrOk = typeof Tesseract !== 'undefined';
+  document.getElementById('engineStatus').innerHTML = `
+    <div class="row"><span>OpenCV.js (bill/coin geometry)</span><span>${cvOk?'✓ Ready':'⏳ Loading / unavailable'}</span></div>
+    <div class="row" style="margin-top:4px;"><span>Tesseract.js (OCR)</span><span>${ocrOk?'✓ Ready':'✕ Unavailable'}</span></div>`;
+}
+document.getElementById('clearAllBtn').addEventListener('click', async ()=>{
+  if(!confirm('This will permanently delete all scans, photos, and items stored on this device. Continue?')) return;
+  await DB.clearAll();
+  toast('All local data cleared');
+  renderHome();
+});
+
+/* ---------------------------------------------------------------------- *
+ * 13. INIT
+ * ---------------------------------------------------------------------- */
+(async function init(){
+  window.cvReady.then(ok=>{ if(!ok) console.warn('OpenCV.js failed to initialize — falling back to manual entry / quality checks only.'); });
+  goPage('home');
+})();
+</script>
+</body>
+</html>
